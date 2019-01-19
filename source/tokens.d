@@ -137,57 +137,32 @@ unittest {
   assert(t.isEOF());
 }
 
-// SELECT test
-unittest {
-  auto stream = new TokenStream("select");
-
-  // peek is stateless
-  auto token = stream.peekOne();
-  auto token2 = stream.peekOne();
-
-  assert(token == token2);
-
-  auto consumed = stream.consume();
-  assert(consumed == token);
-  assert(stream.isEOF());
-}
-
- unittest {
-   auto stream = new TokenStream("select from select");
-   auto t1 = stream.consume();
-   auto t2 = stream.consume();
-   auto t3 = stream.consume();
-   assert(stream.isEOF());
-   assert([t1, t2, t3] == [Token(TokenType.SELECT, 0, "select"), Token(TokenType.FROM, 7, "from"), Token(TokenType.SELECT, 12, "select")]);
- }
-
-unittest {
-  import std.stdio;
-  auto stream = new TokenStream("'foo' select");
-  auto t1 = stream.consume();
-  assert(t1.text == "'foo'");
-  stream.consume();
-  assert(stream.isEOF());
-}
-
 unittest {
   import std.stdio;
   void check(string full, string[] expected) {
     auto t = new TokenStream(full);
     string[] actual = [];
+    ulong[] positions = [];
     while (!t.isEOF()) {
-      actual = actual ~ [t.consume().text];
+      auto token = t.consume();
+      actual = actual ~ [token.text];
+      positions ~= [token.startPos, token.endPos()];
     }
 
     if (actual != expected) {
       writefln("got %s expected %s", actual, expected);
       assert(0);
     }
+
+    for (int i = 1; i < positions.length; i++) {
+      assert(positions[i-1] < positions[i]);
+    }
   }
 
   check("select * select", ["select", "*", "select"]);
   check("from", ["from"]);
-  check("select from", ["select", "from"]);
+  check("select from select", ["select", "from", "select"]);
+  check(`select "foo"`, ["select", `"foo"`]);
   check("'x' 'y'", ["'x'", "'y'"]);
   check("''", ["''"]);
   check(`select "xyz" from`, ["select", `"xyz"`, "from"]);
