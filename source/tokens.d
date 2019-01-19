@@ -1,3 +1,6 @@
+import std.stdio;
+
+
 enum TokenType {
  SELECT, FROM, STAR, LPAREN, RPAREN, STRING
 }
@@ -34,6 +37,7 @@ class TokenStream {
     this.peek = [];
   }
 
+  @nogc
   bool isEOF() {
     return this.peekPos >= source.length && this.peek.length == 0;
   }
@@ -64,6 +68,7 @@ class TokenStream {
     }
 
     if (this.source[peekPos] == ' ') {
+      // special case -- if we detect whitespace, ignore
       this.peekPos++;
       this.peekOneMore();
       return;
@@ -76,6 +81,8 @@ class TokenStream {
     } else if(this.peekChars("from")) {
       auto text = this.source[this.peekPos..this.peekPos + "from".length];
       nextToken = Token(TokenType.FROM, this.peekPos, text);
+    } else if (this.peekChars("*")) {
+      nextToken = Token(TokenType.STAR, this.peekPos, "*");
     } else if (this.peekChars("(")) {
       nextToken = Token(TokenType.LPAREN, this.peekPos, "(");
     }else if (this.peekChars(")")) {
@@ -86,7 +93,8 @@ class TokenStream {
     }
 
     if (nextToken == Token()) {
-      // TODO: errors
+      import std.stdio;
+      writefln("failed on input %s", this.source[this.peekPos..$]);
       assert(0);
     }
 
@@ -96,13 +104,18 @@ class TokenStream {
 
   private string peekQuotedString() {
     auto delim = this.source[this.peekPos];
-    auto n = this.peekPos + 1;
+    assert(delim == '\'' || delim == '"');
+    ulong n = this.peekPos + 1;
     while (this.source[n] != delim) {
       n++; // TODO: handle escaped strings
     }
-    n++;
+    n++; // account for the last delim
 
-    return this.source[this.peekPos..this.peekPos + n];
+    if (n == this.source.length) {
+      return this.source[this.peekPos..$];
+    } else {
+      return this.source[this.peekPos..n];
+    }
   }
 
   @nogc
@@ -155,5 +168,28 @@ unittest {
   assert(t1.text == "'foo'");
   stream.consume();
   assert(stream.isEOF());
+}
+
+unittest {
+  import std.stdio;
+  void check(string full, string[] expected) {
+    auto t = new TokenStream(full);
+    string[] actual = [];
+    while (!t.isEOF()) {
+      actual = actual ~ [t.consume().text];
+    }
+
+    if (actual != expected) {
+      writefln("got %s expected %s", actual, expected);
+      assert(0);
+    }
+  }
+
+  check("select * select", ["select", "*", "select"]);
+  check("from", ["from"]);
+  check("select from", ["select", "from"]);
+  check("'x' 'y'", ["'x'", "'y'"]);
+  check("''", ["''"]);
+  check(`select "xyz" from`, ["select", `"xyz"`, "from"]);
 }
 
