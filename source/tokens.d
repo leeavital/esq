@@ -13,6 +13,10 @@ struct Token {
   auto endPos() {
     return startPos + text.length;
   }
+
+  string stripQuotes() {
+    return this.text[1..this.text.length - 1];
+  }
 }
 
 class TokenStream {
@@ -42,7 +46,7 @@ class TokenStream {
     return this.peekPos >= source.length && this.peek.length == 0;
   }
 
-  Token consume() {
+  public Token consume() {
     peekOne();
     auto next = this.peek[0];
     this.peek = this.peek[1..$];
@@ -51,19 +55,25 @@ class TokenStream {
   }
 
 
-  private Token peekOne() {
+  public Token peekOne() {
     if (this.peek.length > 0) {
       return this.peek[0];
     } else {
       peekOneMore();
       return this.peek[0];
     }
+  }
 
+  public Token peekN(int n) {
+    for (int i = 0; i < n+1 ; i++) {
+      peekOneMore();
+    }
+    return this.peek[n];
   }
 
   // if possible, peek the next token
   private void peekOneMore() {
-    if (this.isEOF()) {
+    if (this.isEOF() || this.peekPos >= this.source.length) {
       return;
     }
 
@@ -135,6 +145,13 @@ class TokenStream {
 unittest {
   auto t = new TokenStream("");
   assert(t.isEOF());
+}
+
+/// peekN can be used to peek N characters ahead
+unittest {
+  auto t = new TokenStream("select from from");
+  assert(t.peekN(0).typ == TokenType.SELECT);
+  assert(t.peekN(1).typ == TokenType.FROM);
 }
 
 unittest {
