@@ -130,14 +130,11 @@ class TokenStream {
 
   @nogc
   private bool peekChars(string txt) {
-    foreach (i, chr ; txt) {
-      // TODO: handle case equality
-      if (this.source[this.peekPos + i] != chr) {
-        return false;
-      }
+    import std.uni : icmp;
+    if (this.source.length - this.peekPos < txt.length) {
+      return false;
     }
-
-    return true;
+    return icmp(this.source[this.peekPos..this.peekPos+txt.length], txt) == 0;
   }
 }
 
@@ -183,5 +180,6 @@ unittest {
   check("'x' 'y'", ["'x'", "'y'"]);
   check("''", ["''"]);
   check(`select "xyz" from`, ["select", `"xyz"`, "from"]);
+  check(`SELECT "xyz" FROM "foo"`, ["SELECT", `"xyz"`, "FROM", `"foo"`]);
 }
 
