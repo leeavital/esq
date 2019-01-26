@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+esq.so
+esq.dylib
+esq.dll
+esq.a
+esq.lib
+esq-test-*
+*.exe
+*.o
+*.obj
+*.lst
