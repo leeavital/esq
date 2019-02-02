@@ -54,6 +54,10 @@ class Parser {
         this.tokens.consume(); // consume FROM
         auto txt = this.tokens.consume().stripQuotes();
         e.from = txt; // TODO: if 'from' is already set?
+      } else {
+        // TODO: real errors
+        writefln("cannot consume token %s; will skip", this.tokens.peekOne());
+        this.tokens.consume();
       }
     }
   }
