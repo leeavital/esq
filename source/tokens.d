@@ -105,6 +105,7 @@ class TokenStream {
     if (nextToken == Token()) {
       import std.stdio;
       writefln("failed on input %s", this.source[this.peekPos..$]);
+      // TODO: think about how to skip lexing for bad stuff
       assert(0);
     }
 
