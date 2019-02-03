@@ -2,7 +2,7 @@ import std.stdio;
 
 
 enum TokenType {
- SELECT, FROM, STAR, LPAREN, RPAREN, STRING
+ SELECT, FROM, STAR, LPAREN, RPAREN, STRING, NUMERIC, LIMIT
 }
 
 struct Token {
@@ -14,8 +14,22 @@ struct Token {
     return startPos + text.length;
   }
 
+  // the following are 
   string stripQuotes() {
     return this.text[1..this.text.length - 1];
+  }
+
+  bool numericIsNegative() {
+    return this.text[0] == '-';
+  }
+
+  bool numericIsDecimal() {
+    foreach (const c; this.text) {
+      if (c == '.') {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -91,6 +105,9 @@ class TokenStream {
     } else if(this.peekChars("from")) {
       auto text = this.source[this.peekPos..this.peekPos + "from".length];
       nextToken = Token(TokenType.FROM, this.peekPos, text);
+    } else if (this.peekChars("limit")) {
+      auto text = this.source[this.peekPos..this.peekPos + "limit".length];
+      nextToken = Token(TokenType.LIMIT, this.peekPos, text);
     } else if (this.peekChars("*")) {
       nextToken = Token(TokenType.STAR, this.peekPos, "*");
     } else if (this.peekChars("(")) {
@@ -100,6 +117,8 @@ class TokenStream {
     } else if (this.peekChars("\"") || this.peekChars("'")) {
       auto str = peekQuotedString();
       nextToken = Token(TokenType.STRING, this.peekPos, str);
+    } else if (this.peekNumeric(&nextToken)) {
+      // do nothing
     }
 
     if (nextToken == Token()) {
@@ -113,6 +132,7 @@ class TokenStream {
     this.peek = this.peek ~ nextToken;
   }
 
+  @nogc
   private string peekQuotedString() {
     auto delim = this.source[this.peekPos];
     assert(delim == '\'' || delim == '"');
@@ -130,12 +150,56 @@ class TokenStream {
   }
 
   @nogc
+  private bool peekNumeric(Token* t) {
+    import std.ascii;
+    bool negative;
+
+    ulong n;  // where we will start scanning
+    bool isNegative = canPeekN(2) && this.source[this.peekPos] == '-' && isDigit(this.source[this.peekPos + 1]);
+    bool isPositive = canPeekN(1) && isDigit(this.source[this.peekPos]);
+
+    if (isNegative) {
+      n = this.peekPos + 2;
+    } else if (isPositive) {
+      n = this.peekPos + 1;
+    } else {
+      return false;
+    }
+
+    // find the next space
+    while (true) {
+      if (n >= this.source.length) {
+        break;
+      }
+
+      char c = this.source[n];
+      if (c == '.' || isDigit(c)) {
+        n++;
+      } else {
+        break;
+      }
+    }
+
+    // TODO: make sure 1 or zero decimal points
+    t.typ = TokenType.NUMERIC;
+    t.startPos = this.peekPos;
+    t.text = this.source[this.peekPos..n];
+
+    return true;
+  }
+
+  @nogc
   private bool peekChars(string txt) {
     import std.uni : icmp;
     if (this.source.length - this.peekPos < txt.length) {
       return false;
     }
     return icmp(this.source[this.peekPos..this.peekPos+txt.length], txt) == 0;
+  }
+
+  @nogc
+  private bool canPeekN(int n) {
+    return n <= (this.source.length - this.peekPos);
   }
 }
 
@@ -182,5 +246,11 @@ unittest {
   check("''", ["''"]);
   check(`select "xyz" from`, ["select", `"xyz"`, "from"]);
   check(`SELECT "xyz" FROM "foo"`, ["SELECT", `"xyz"`, "FROM", `"foo"`]);
+  check(`SELECT 123`, ["SELECT", "123"]);
+  check(`SELECT -123`, ["SELECT", "-123"]);
+  check(`SELECT 1.2`, ["SELECT",  "1.2"]);
+  check(`SELECT -1.2`, ["SELECT",  "-1.2"]);
+  check(`SELECT -14.3 4002 FROM 40`, ["SELECT", "-14.3", "4002", "FROM", "40"]);
+  check(`SELECT LIMIT FROM`, ["SELECT", "LIMIT", "FROM"]);
 }
 

@@ -9,6 +9,7 @@ enum Type {
 struct ESelect {
   string[] fieldNames;
   string from;
+  uint lowerLimit;
 }
 
 union Expr {
@@ -68,6 +69,19 @@ class Parser {
           } else {
             pr.errors ~= TokenAndError(this.tokens.consume(), "Expected an index name after FROM");
           }
+      } else if (peekNIsType(0, TokenType.LIMIT)) {
+          this.tokens.consume(); // consume limit
+          auto t = this.tokens.consume();
+          if (t.typ != TokenType.NUMERIC) {
+            pr.errors ~= TokenAndError(t, "expected numeric after LIMIT");
+          } else if (t.numericIsNegative()) {
+            pr.errors ~= TokenAndError(t, "cannot have a negative number as LIMIT");
+          } else if (t.numericIsDecimal()) {
+            pr.errors ~= TokenAndError(t, "cannot use a non-int number as LIMIT");
+          } else {
+            import std.conv;
+            e.lowerLimit = t.text.to!uint;
+          }
       } else {
         auto badToken = this.tokens.consume();
         pr.errors ~= TokenAndError(badToken, "expected from, where, or field names in select statement");
@@ -91,6 +105,14 @@ unittest {
   auto e = p.parse();
   assert(e.typ == Type.SELECT);
   assert(e.expr.select.from == "process");
+}
+
+unittest {
+  auto p = parserFromString("select 'p' from 'process' LIMIT 10");
+  auto e = p.parse();
+  assert(e.typ == Type.SELECT);
+  assert(e.expr.select.from == "process");
+  assert(e.expr.select.lowerLimit == 10);
 }
 
 unittest {

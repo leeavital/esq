@@ -3,6 +3,7 @@ import std.stdio;
 import tokens;
 import parser;
 import std.array;
+import std.format;
 
 int main(string[] args)
 {
@@ -27,7 +28,11 @@ int main(string[] args)
 
   switch (result.typ) {
     case Type.SELECT:
-      writefln("curl -XPOST http://localhost:9200/%s/_search", result.expr.select.from);
+      string payload = "";
+      if (result.expr.select.lowerLimit > 0) {
+        payload = format(`-H "Content-Type: application/json" -d '{"size": %d}'`, result.expr.select.lowerLimit);
+      }
+      writefln("curl -XPOST http://localhost:9200/%s/_search?pretty=true %s", result.expr.select.from, payload);
       break;
     default:
       assert(0);
