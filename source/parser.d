@@ -6,14 +6,25 @@ enum Type {
 }
 
 ///  expression types
+
+// Top level expression type
+union Expr {
+  ESelect select;
+}
+
 struct ESelect {
   string[] fieldNames;
   string from;
   uint lowerLimit;
+  EWhere where;
 }
 
-union Expr {
-  ESelect select;
+enum BoolOp { Equal }
+
+struct EWhere {
+  BoolOp operator;
+  string field;
+  Token test; // either a numberic or a string
 }
 
 struct ParseResult {
@@ -56,6 +67,8 @@ class Parser {
   }
 
   void parseSelect(ParseResult *pr, ESelect* e) {
+    auto didSeeWhere = false;
+
     while (!this.tokens.isEOF()) {
       if (peekNIsType(0, TokenType.STRING)) {
         auto t = this.tokens.consume();
@@ -68,6 +81,17 @@ class Parser {
             e.from = idx;
           } else {
             pr.errors ~= TokenAndError(this.tokens.consume(), "Expected an index name after FROM");
+          }
+      } else if (peekNIsType(0, TokenType.WHERE)) {
+          auto t = this.tokens.consume();
+          if (didSeeWhere) {
+            // error, but re-parse the WHERE statement into a temporary var
+            pr.errors ~= TokenAndError(t, "cannot have more than one WHERE clause");
+            auto w = EWhere();
+            parseWhere(pr, &w); // is there better syntax for this?
+          } else {
+            parseWhere(pr, &e.where);
+            didSeeWhere = true;
           }
       } else if (peekNIsType(0, TokenType.LIMIT)) {
           this.tokens.consume(); // consume limit
@@ -87,6 +111,37 @@ class Parser {
         pr.errors ~= TokenAndError(badToken, "expected from, where, or field names in select statement");
       }
     }
+  }
+
+  void parseWhere(ParseResult *pr, EWhere *where) {
+    // TODO: only parsing one level, support arbitrary boolean expressions
+    if (peekNIsType(0, TokenType.STRING)) {
+      auto sym = this.tokens.consume();
+      if (peekNIsType(0, TokenType.OPEQ)) {
+        auto op = this.tokens.consume();
+        if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING)) {
+           auto lhs = this.tokens.consume();
+           where.operator = parseOp(op);
+           where.field = sym.stripQuotes();
+           where.test = lhs;
+        } else {
+            pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
+        }
+      } else {
+        pr.errors ~= TokenAndError(this.tokens.consume(), "expected boolean operator after symbol in WHERE");
+      }
+    }
+  }
+
+  // precondition: token must be one of the bool op tokens
+  @nogc
+  BoolOp parseOp(Token tok) {
+    switch (tok.typ) {
+      case TokenType.OPEQ:
+        return BoolOp.Equal;
+      default:
+        assert(0);
+    } 
   }
 
   // TODO: handle the case where we can't peek to N because of EOF
@@ -120,4 +175,14 @@ unittest {
   auto e = p.parse();
   assert(e.errors.length == 1);
   assert(e.errors[0] == TokenAndError(Token(TokenType.SELECT, 7, "select"), "expected from, where, or field names in select statement"));
+}
+
+unittest {
+  auto p = parserFromString("select from 'foo' where 'p' = 3");
+  auto e = p.parse();
+  assert(e.errors.length == 0);
+  assert(e.expr.select.where.field == "p");
+  assert(e.expr.select.where.operator == BoolOp.Equal);
+  assert(e.expr.select.where.test.text == "3");
+  assert(e.expr.select.where.test.typ == TokenType.NUMERIC);
 }
