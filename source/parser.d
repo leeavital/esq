@@ -141,12 +141,11 @@ class Parser {
         return BoolOp.Equal;
       default:
         assert(0);
-    } 
+    }
   }
 
-  // TODO: handle the case where we can't peek to N because of EOF
   bool peekNIsType(int n, TokenType t) {
-    return this.tokens.peekN(n).typ == t;
+    return this.tokens.canPeekN(n) && this.tokens.peekN(n).typ == t;
   }
 }
 
