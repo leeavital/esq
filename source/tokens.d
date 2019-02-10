@@ -2,7 +2,7 @@ import std.stdio;
 
 
 enum TokenType {
- SELECT, FROM, STAR, LPAREN, RPAREN, STRING, NUMERIC, LIMIT
+ SELECT, FROM, STAR, WHERE, LPAREN, RPAREN, STRING, NUMERIC, LIMIT
 }
 
 struct Token {
@@ -14,7 +14,7 @@ struct Token {
     return startPos + text.length;
   }
 
-  // the following are 
+  // the following are specific to certain token types
   string stripQuotes() {
     return this.text[1..this.text.length - 1];
   }
@@ -105,6 +105,9 @@ class TokenStream {
     } else if(this.peekChars("from")) {
       auto text = this.source[this.peekPos..this.peekPos + "from".length];
       nextToken = Token(TokenType.FROM, this.peekPos, text);
+    } else if (this.peekChars("where")) {
+      auto text = this.source[this.peekPos..this.peekPos + "where".length];
+      nextToken = Token(TokenType.WHERE, this.peekPos, text);
     } else if (this.peekChars("limit")) {
       auto text = this.source[this.peekPos..this.peekPos + "limit".length];
       nextToken = Token(TokenType.LIMIT, this.peekPos, text);
@@ -252,5 +255,6 @@ unittest {
   check(`SELECT -1.2`, ["SELECT",  "-1.2"]);
   check(`SELECT -14.3 4002 FROM 40`, ["SELECT", "-14.3", "4002", "FROM", "40"]);
   check(`SELECT LIMIT FROM`, ["SELECT", "LIMIT", "FROM"]);
+  check(`SELECT LIMIT WHERE 10`, ["SELECT", "LIMIT", "WHERE", "10"]);
 }
 
