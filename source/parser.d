@@ -6,14 +6,25 @@ enum Type {
 }
 
 ///  expression types
+
+// Top level expression type
+union Expr {
+  ESelect select;
+}
+
 struct ESelect {
   string[] fieldNames;
   string from;
   uint lowerLimit;
+  EWhere where;
 }
 
-union Expr {
-  ESelect select;
+enum BoolOp { Equal }
+
+struct EWhere {
+  BoolOp operator;
+  string field;
+  Token test; // either a numberic or a string
 }
 
 struct ParseResult {
@@ -69,6 +80,9 @@ class Parser {
           } else {
             pr.errors ~= TokenAndError(this.tokens.consume(), "Expected an index name after FROM");
           }
+      } else if (peekNIsType(0, TokenType.WHERE)) {
+          this.tokens.consume(); // pop off where, TODO: check if a where has already been seen
+          parseWhere(pr, &e.where);
       } else if (peekNIsType(0, TokenType.LIMIT)) {
           this.tokens.consume(); // consume limit
           auto t = this.tokens.consume();
@@ -87,6 +101,10 @@ class Parser {
         pr.errors ~= TokenAndError(badToken, "expected from, where, or field names in select statement");
       }
     }
+  }
+
+  void parseWhere(ParseResult *pr, EWhere *where) {
+    assert(0); // TODO: implement me!     
   }
 
   // TODO: handle the case where we can't peek to N because of EOF
