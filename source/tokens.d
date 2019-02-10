@@ -2,7 +2,7 @@ import std.stdio;
 
 
 enum TokenType {
- SELECT, FROM, STAR, WHERE, LPAREN, RPAREN, STRING, NUMERIC, LIMIT
+ SELECT, FROM, STAR, WHERE, LPAREN, RPAREN, STRING, NUMERIC, LIMIT, OPEQ
 }
 
 struct Token {
@@ -115,8 +115,10 @@ class TokenStream {
       nextToken = Token(TokenType.STAR, this.peekPos, "*");
     } else if (this.peekChars("(")) {
       nextToken = Token(TokenType.LPAREN, this.peekPos, "(");
-    }else if (this.peekChars(")")) {
+    } else if (this.peekChars(")")) {
       nextToken = Token(TokenType.RPAREN, this.peekPos, ")");
+    } else if (this.peekChars("=")) {
+      nextToken = Token(TokenType.OPEQ, this.peekPos, "=");
     } else if (this.peekChars("\"") || this.peekChars("'")) {
       auto str = peekQuotedString();
       nextToken = Token(TokenType.STRING, this.peekPos, str);
@@ -256,5 +258,6 @@ unittest {
   check(`SELECT -14.3 4002 FROM 40`, ["SELECT", "-14.3", "4002", "FROM", "40"]);
   check(`SELECT LIMIT FROM`, ["SELECT", "LIMIT", "FROM"]);
   check(`SELECT LIMIT WHERE 10`, ["SELECT", "LIMIT", "WHERE", "10"]);
+  check(`SELECT = WHERE =`, ["SELECT", "=", "WHERE", "="]);
 }
 
