@@ -1,3 +1,7 @@
 d:
   - dmd
   - ldc
+
+os:
+  - linux
+  - osx
