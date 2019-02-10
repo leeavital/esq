@@ -181,4 +181,8 @@ unittest {
   auto p = parserFromString("select from 'foo' where 'p' = 3");
   auto e = p.parse();
   assert(e.errors.length == 0);
+  assert(e.expr.select.where.field == "p");
+  assert(e.expr.select.where.operator == BoolOp.Equal);
+  assert(e.expr.select.where.test.text == "3");
+  assert(e.expr.select.where.test.typ == TokenType.NUMERIC);
 }
