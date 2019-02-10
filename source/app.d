@@ -28,9 +28,10 @@ int main(string[] args)
 
   switch (result.typ) {
     case Type.SELECT:
-      string payload = "";
-      if (result.expr.select.lowerLimit > 0) {
-        payload = format(`-H "Content-Type: application/json" -d '{"size": %d}'`, result.expr.select.lowerLimit);
+      string json = getPayload(result.expr.select);
+      auto payload = "";
+      if (json != "") {
+        payload = format(`-H "Content-Type: application/json" -d '%s'`, json);
       }
       writefln("curl -XPOST http://localhost:9200/%s/_search?pretty=true %s", result.expr.select.from, payload);
       break;
@@ -39,6 +40,24 @@ int main(string[] args)
   }
 
   return 0;
+}
+
+string getPayload(ESelect s) {
+  import std.stdio;
+
+  // TODO: this whole thing should be in its own module that is less if-elsey.
+
+  auto json = "";
+  if (s.lowerLimit != 0) {
+    if (s.where == EWhere.init) {
+        json = format(`{"size": %d}`, s.lowerLimit);
+    } else {
+        json = format(`{"size": %d, "query": {"term": {"%s", %s}}}`, s.lowerLimit, s.where.field, s.where.test.text);
+    }
+  } else if (s.where != EWhere.init) {
+      json = format(`{"query": {"term": {"%s", %s}}}`, s.where.field, s.where.test.text);
+  }
+  return json;
 }
 
 void usage() {
