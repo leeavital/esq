@@ -46,6 +46,7 @@ string getPayload(ESelect s) {
   import std.stdio;
 
   // TODO: this whole thing should be in its own module that is less if-elsey.
+  // TODO: using s.where.test.text is not safe for json embedding because it might be single-quote wrapped
 
   auto json = "";
   if (s.lowerLimit != 0) {
