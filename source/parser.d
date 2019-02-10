@@ -67,6 +67,8 @@ class Parser {
   }
 
   void parseSelect(ParseResult *pr, ESelect* e) {
+    auto didSeeWhere = false;
+
     while (!this.tokens.isEOF()) {
       if (peekNIsType(0, TokenType.STRING)) {
         auto t = this.tokens.consume();
@@ -81,8 +83,16 @@ class Parser {
             pr.errors ~= TokenAndError(this.tokens.consume(), "Expected an index name after FROM");
           }
       } else if (peekNIsType(0, TokenType.WHERE)) {
-          this.tokens.consume(); // pop off where, TODO: check if a where has already been seen
-          parseWhere(pr, &e.where);
+          auto t = this.tokens.consume(); // pop off where, TODO: check if a where has already been seen
+          if (didSeeWhere) {
+            // error, but re-parse the WHERE statement into a temporary var
+            pr.errors ~= TokenAndError(t, "cannot have more than one WHERE clause");
+            auto w = EWhere();
+            parseWhere(pr, &w); // is there better syntax for this?
+          } else {
+            parseWhere(pr, &e.where);
+            didSeeWhere = true;
+          }
       } else if (peekNIsType(0, TokenType.LIMIT)) {
           this.tokens.consume(); // consume limit
           auto t = this.tokens.consume();
