@@ -104,7 +104,23 @@ class Parser {
   }
 
   void parseWhere(ParseResult *pr, EWhere *where) {
-    assert(0); // TODO: implement me!     
+    // TODO: only parsing one level, support arbitrary boolean expressions
+    if (peekNIsType(0, TokenType.STRING)) {
+      auto sym = this.tokens.consume();
+      if (peekNIsType(0, TokenType.OPEQ)) {
+        auto op = this.tokens.consume();
+        if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING)) {
+           auto lhs = this.tokens.consume(); 
+           where.operator = BoolOp.Equal; // TODO: make use of op variable
+           where.field = sym.stripQuotes();
+           where.test = lhs;
+        } else {
+            pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
+        }
+      } else {
+        pr.errors ~= TokenAndError(this.tokens.consume(), "expected boolean operator after symbol in WHERE");
+      }
+    }
   }
 
   // TODO: handle the case where we can't peek to N because of EOF
@@ -138,4 +154,10 @@ unittest {
   auto e = p.parse();
   assert(e.errors.length == 1);
   assert(e.errors[0] == TokenAndError(Token(TokenType.SELECT, 7, "select"), "expected from, where, or field names in select statement"));
+}
+
+unittest {
+  auto p = parserFromString("select from 'foo' where 'p' = 3");
+  auto e = p.parse();
+  assert(e.errors.length == 0);
 }
