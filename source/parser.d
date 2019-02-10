@@ -83,7 +83,7 @@ class Parser {
             pr.errors ~= TokenAndError(this.tokens.consume(), "Expected an index name after FROM");
           }
       } else if (peekNIsType(0, TokenType.WHERE)) {
-          auto t = this.tokens.consume(); // pop off where, TODO: check if a where has already been seen
+          auto t = this.tokens.consume();
           if (didSeeWhere) {
             // error, but re-parse the WHERE statement into a temporary var
             pr.errors ~= TokenAndError(t, "cannot have more than one WHERE clause");
@@ -120,8 +120,8 @@ class Parser {
       if (peekNIsType(0, TokenType.OPEQ)) {
         auto op = this.tokens.consume();
         if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING)) {
-           auto lhs = this.tokens.consume(); 
-           where.operator = BoolOp.Equal; // TODO: make use of op variable
+           auto lhs = this.tokens.consume();
+           where.operator = parseOp(op);
            where.field = sym.stripQuotes();
            where.test = lhs;
         } else {
@@ -131,6 +131,17 @@ class Parser {
         pr.errors ~= TokenAndError(this.tokens.consume(), "expected boolean operator after symbol in WHERE");
       }
     }
+  }
+
+  // precondition: token must be one of the bool op tokens
+  @nogc
+  BoolOp parseOp(Token tok) {
+    switch (tok.typ) {
+      case TokenType.OPEQ:
+        return BoolOp.Equal;
+      default:
+        assert(0);
+    } 
   }
 
   // TODO: handle the case where we can't peek to N because of EOF
