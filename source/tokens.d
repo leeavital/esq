@@ -78,10 +78,17 @@ class TokenStream {
     }
   }
 
-  public Token peekN(int n) {
+  public bool canPeekN(int n) {
     for (int i = 0; i < n+1 ; i++) {
       peekOneMore();
     }
+    return this.peek.length > n;
+  }
+
+  // this will panic if canPeekN(n) is not true
+  // at the time of calling
+  public Token peekN(int n) {
+    canPeekN(n);
     return this.peek[n];
   }
 
@@ -160,8 +167,8 @@ class TokenStream {
     bool negative;
 
     ulong n;  // where we will start scanning
-    bool isNegative = canPeekN(2) && this.source[this.peekPos] == '-' && isDigit(this.source[this.peekPos + 1]);
-    bool isPositive = canPeekN(1) && isDigit(this.source[this.peekPos]);
+    bool isNegative = canPeekNChars(2) && this.source[this.peekPos] == '-' && isDigit(this.source[this.peekPos + 1]);
+    bool isPositive = canPeekNChars(1) && isDigit(this.source[this.peekPos]);
 
     if (isNegative) {
       n = this.peekPos + 2;
@@ -203,7 +210,7 @@ class TokenStream {
   }
 
   @nogc
-  private bool canPeekN(int n) {
+  private bool canPeekNChars(int n) {
     return n <= (this.source.length - this.peekPos);
   }
 }

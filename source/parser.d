@@ -124,9 +124,13 @@ class Parser {
            where.operator = parseOp(op);
            where.field = sym.stripQuotes();
            where.test = lhs;
+        } else if (this.tokens.isEOF()) {
+          pr.errors ~= TokenAndError(op, "unterminated boolean expression");
         } else {
-            pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
+          pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
         }
+      } else if (this.tokens.isEOF()) {
+        pr.errors ~= TokenAndError(sym, "unterminated boolean statement");
       } else {
         pr.errors ~= TokenAndError(this.tokens.consume(), "expected boolean operator after symbol in WHERE");
       }
@@ -141,12 +145,11 @@ class Parser {
         return BoolOp.Equal;
       default:
         assert(0);
-    } 
+    }
   }
 
-  // TODO: handle the case where we can't peek to N because of EOF
   bool peekNIsType(int n, TokenType t) {
-    return this.tokens.peekN(n).typ == t;
+    return this.tokens.canPeekN(n) && this.tokens.peekN(n).typ == t;
   }
 }
 

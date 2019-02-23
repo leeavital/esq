@@ -7,7 +7,7 @@ import std.format;
 
 int main(string[] args)
 {
-  auto q = args[1..$].join(" ");
+  auto q = args[1];
   auto t = new TokenStream(q);
   auto p = new Parser(t);
 
