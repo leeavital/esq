@@ -14,9 +14,11 @@ string emitResult(Target t, ParseResult input) {
 
   final switch (input.typ) {
     case Type.SELECT:
-      buf.write(format("curl http://localhost:9200/%s?pretty=true", input.expr.select.from));
+      auto hasBody = shouldWriteQueryBody(input.expr.select);
 
-      if (shouldWriteQueryBody(input.expr.select)) {
+      buf.write(format("curl %shttp://localhost:9200/%s/_search?pretty=true", hasBody ? "-XPOST " : "", input.expr.select.from));
+
+      if (hasBody) {
         buf.write(` -H "Content-Type: application/json" -d `);
         buf.write(`'{ ` ); // start main request
         bool shouldLeadingComma = writeSize(input.expr.select, buf);
@@ -78,7 +80,7 @@ unittest {
  e.select.where = EWhere(BoolOp.Equal, "foo", Token(TokenType.NUMERIC,  200, "10"));
  const s = emitResult(Target.curl, ParseResult(Type.SELECT, e, []));
 
- auto expected = `curl http://localhost:9200/idx?pretty=true -H "Content-Type: application/json" -d '{ "size": 10 , "query": { "term": { "foo" : 10 } } }'`;
+ auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size": 10 , "query": { "term": { "foo" : 10 } } }'`;
  if (s != expected) {
     writefln("expected emit to be %s but was %s", expected, s);
     assert(0);
