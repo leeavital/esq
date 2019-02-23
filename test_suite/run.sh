@@ -12,6 +12,8 @@ dirs=$(find . -maxdepth 1 -type d -not -name '.')
 
 set +e
 
+failed=no
+
 # TODO: it would be really nice to have a flag that assumed that the executable was right, and
 # filled out all of the actual.{err,out} files for me to code review quickly. Updating these test
 # cases could become really tedious
@@ -25,13 +27,20 @@ do
   then
     echo "stderr did not match"
     echo "$err_diff"
+    failed=yes
   fi
 
   if ! out_diff=$(diff "$d/actual.out" "$d/expected.out")
   then
     echo "stdout did not match"
     echo "$out_diff"
+    failed=yes
   fi
 done
 
 popd > /dev/null
+
+if [[ "$failed" = "yes" ]]
+then
+  exit 1
+fi
