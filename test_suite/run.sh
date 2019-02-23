@@ -12,6 +12,9 @@ dirs=$(find . -maxdepth 1 -type d -not -name '.')
 
 set +e
 
+# TODO: it would be really nice to have a flag that assumed that the executable was right, and
+# filled out all of the actual.{err,out} files for me to code review quickly. Updating these test
+# cases could become really tedious
 for d in $dirs
 do
   echo "testing $d"
