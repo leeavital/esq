@@ -1,0 +1,1 @@
+curl -XPOST http://localhost:9200/foo/_search?pretty=true 
