@@ -1,6 +1,8 @@
 ESQ
 ===
 
+[![Build Status](https://travis-ci.org/leeavital/esq.svg?branch=master)](https://travis-ci.org/leeavital/esq)
+
 `esq` aims to be a swiss army knife for quickly querying elasticsearch. It aims
 to be useful for both ad-hoc analysis and for use in bash scripts.
 
