@@ -21,15 +21,13 @@ do
   # shellcheck source=/dev/null
   source "$d/command.sh" > "$d/actual.out" 2> "$d/actual.err"
 
-  err_diff=$(diff "$d/actual.err" "$d/expected.err")
-  if [[ "$?" != "0" ]]
+  if ! err_diff=$(diff "$d/actual.err" "$d/expected.err")
   then
     echo "stderr did not match"
     echo "$err_diff"
   fi
 
-  out_diff=$(diff "$d/actual.out" "$d/expected.out")
-  if [[ "$?" != "0" ]]
+  if ! out_diff=$(diff "$d/actual.out" "$d/expected.out")
   then
     echo "stdout did not match"
     echo "$out_diff"
