@@ -64,7 +64,7 @@ class TokenStream {
     peekOne();
     auto next = this.peek[0];
     this.peek = this.peek[1..$];
-    this.currentPos = next.endPos + 1;
+    this.currentPos = next.endPos;
     return next;
   }
 
@@ -140,7 +140,7 @@ class TokenStream {
       assert(0);
     }
 
-    this.peekPos = nextToken.endPos() + 1;
+    this.peekPos = nextToken.endPos();
     this.peek = this.peek ~ nextToken;
   }
 
@@ -236,19 +236,25 @@ unittest {
   void check(string full, string[] expected) {
     auto t = new TokenStream(full);
     string[] actual = [];
-    ulong[] positions = [];
+    Token[] tokens;
     while (!t.isEOF()) {
       auto token = t.consume();
       actual = actual ~ [token.text];
-      positions ~= [token.startPos, token.endPos()];
+      tokens ~= token;
     }
 
     if (actual != expected) {
       messages ~= format("when tokenizing <%s> got %s expected %s", full, actual, expected);
     }
 
-    for (int i = 1; i < positions.length; i++) {
-      assert(positions[i-1] < positions[i]);
+    auto arePositionsInLine = true;
+    for (int i = 1; i < tokens.length; i++) {
+      auto prev = tokens[i-1];
+      auto curr = tokens[i];
+      auto inline = prev.startPos < curr.startPos && prev.endPos <= curr.startPos;
+      if (!inline) {
+        messages ~= format("tokens positions were out of order %s  --> %s", prev, curr);
+      }
     }
   }
 
@@ -277,6 +283,9 @@ unittest {
   check(`SELECT LIMIT FROM`, ["SELECT", "LIMIT", "FROM"]);
   check(`SELECT LIMIT WHERE 10`, ["SELECT", "LIMIT", "WHERE", "10"]);
   check(`SELECT = WHERE =`, ["SELECT", "=", "WHERE", "="]);
+  check(`WHERE "foo" =1`, ["WHERE", `"foo"`, `=`, `1`]);
+  check(`WHERE "foo"=1`, ["WHERE", `"foo"`, `=`, `1`]);
+  check(`WHERE "foo" = 1`, ["WHERE", `"foo"`, `=`, `1`]);
   finish();
 }
 
