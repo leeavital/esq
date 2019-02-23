@@ -230,6 +230,9 @@ unittest {
 
 unittest {
   import std.stdio;
+  import std.format;
+
+  string[] messages;
   void check(string full, string[] expected) {
     auto t = new TokenStream(full);
     string[] actual = [];
@@ -241,12 +244,20 @@ unittest {
     }
 
     if (actual != expected) {
-      writefln("got %s expected %s", actual, expected);
-      assert(0);
+      messages ~= format("when tokenizing <%s> got %s expected %s", full, actual, expected);
     }
 
     for (int i = 1; i < positions.length; i++) {
       assert(positions[i-1] < positions[i]);
+    }
+  }
+
+  void finish() {
+    foreach (const m ; messages) {
+      writeln(m);
+    }
+    if (messages.length > 0) {
+      assert(0);
     }
   }
 
@@ -266,5 +277,6 @@ unittest {
   check(`SELECT LIMIT FROM`, ["SELECT", "LIMIT", "FROM"]);
   check(`SELECT LIMIT WHERE 10`, ["SELECT", "LIMIT", "WHERE", "10"]);
   check(`SELECT = WHERE =`, ["SELECT", "=", "WHERE", "="]);
+  finish();
 }
 
