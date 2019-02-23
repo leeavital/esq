@@ -124,9 +124,13 @@ class Parser {
            where.operator = parseOp(op);
            where.field = sym.stripQuotes();
            where.test = lhs;
+        } else if (this.tokens.isEOF()) {
+          pr.errors ~= TokenAndError(op, "unterminated boolean expression");
         } else {
-            pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
+          pr.errors ~= TokenAndError(this.tokens.consume(), "expected string or number after operator");
         }
+      } else if (this.tokens.isEOF()) {
+        pr.errors ~= TokenAndError(sym, "unterminated boolean statement");
       } else {
         pr.errors ~= TokenAndError(this.tokens.consume(), "expected boolean operator after symbol in WHERE");
       }
