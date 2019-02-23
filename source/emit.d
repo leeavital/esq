@@ -16,7 +16,7 @@ string emitResult(Target t, ParseResult input) {
     case Type.SELECT:
       auto hasBody = shouldWriteQueryBody(input.expr.select);
 
-      buf.write(format("curl %shttp://localhost:9200/%s/_search?pretty=true", hasBody ? "-XPOST" : "", input.expr.select.from));
+      buf.write(format("curl %shttp://localhost:9200/%s/_search?pretty=true", hasBody ? "-XPOST " : "", input.expr.select.from));
 
       if (hasBody) {
         buf.write(` -H "Content-Type: application/json" -d `);
