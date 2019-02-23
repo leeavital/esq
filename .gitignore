@@ -12,3 +12,5 @@ esq-test-*
 *.o
 *.obj
 *.lst
+
+esq
