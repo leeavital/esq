@@ -25,14 +25,14 @@ do
 
   if ! err_diff=$(diff "$d/actual.err" "$d/expected.err")
   then
-    echo "stderr did not match"
+    echo "stderr did not match when diffing $(readlink -f $d/actual.err) and $(readlink -f $d/expected.err)"
     echo "$err_diff"
     failed=yes
   fi
 
   if ! out_diff=$(diff "$d/actual.out" "$d/expected.out")
   then
-    echo "stdout did not match"
+    echo "stdout did not match when diffing $(readlink -f $d/actual.out) and $(readlink -f $d/expected.out)"
     echo "$out_diff"
     failed=yes
   fi
