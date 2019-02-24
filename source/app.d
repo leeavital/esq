@@ -8,6 +8,11 @@ import std.format;
 
 int main(string[] args)
 {
+  if(args.length != 2) {
+    usage();
+    return 1;
+  }
+
   auto q = args[1];
   auto t = new TokenStream(q);
   auto p = new Parser(t);
