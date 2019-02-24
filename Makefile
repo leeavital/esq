@@ -18,6 +18,10 @@ integration_test: esq
 format:
 	dub run dfmt -- source/*.d
 
+.PHONY: check_format
+check_format:
+	./test_suite/check_format.sh
+
 .PHONY: install
 install: esq
 	install esq /usr/local/bin

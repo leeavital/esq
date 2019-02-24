@@ -3,7 +3,9 @@ language: d
 d:
   - dmd
 
-script: make test
+script:
+  - dub fetch --version='~master' dfmt
+  - make -j4 test check_format
 
 os:
   - linux
