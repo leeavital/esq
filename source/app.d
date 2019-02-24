@@ -8,40 +8,46 @@ import std.format;
 
 int main(string[] args)
 {
-  if(args.length != 2) {
-    usage();
-    return 1;
-  }
-
-  auto q = args[1];
-  auto t = new TokenStream(q);
-  auto p = new Parser(t);
-
-  if (t.isEOF()) {
-    usage();
-    return 1;
-  }
-
-  auto result = p.parse();
-
-  if (result.errors.length > 0) {
-    import errors;
-    foreach(const e ; result.errors) {
-      formatError(stderr, q, e);
+    if (args.length != 2)
+    {
+        usage();
+        return 1;
     }
-    return 1;
-  }
 
-  auto curlOut = emitResult(Target.curl, result);
-  writeln(curlOut);
-  return 0;
+    auto q = args[1];
+    auto t = new TokenStream(q);
+    auto p = new Parser(t);
+
+    if (t.isEOF())
+    {
+        usage();
+        return 1;
+    }
+
+    auto result = p.parse();
+
+    if (result.errors.length > 0)
+    {
+        import errors;
+
+        foreach (const e; result.errors)
+        {
+            formatError(stderr, q, e);
+        }
+        return 1;
+    }
+
+    auto curlOut = emitResult(Target.curl, result);
+    writeln(curlOut);
+    return 0;
 
 }
 
+void usage()
+{
+    import std.string;
 
-void usage() {
-  import std.string;
-  auto u = `
+    auto u = `
     esq -- a swiss army knife for elasticsearch
 
     esq is meant to be installed on a local machine, and outputs curl commands which
@@ -68,6 +74,6 @@ void usage() {
       esq 'SELECT FROM "testindex" LIMIT 10 | ssh my-elasticsearch-host
     `;
 
-  write(outdent(u));
+    write(outdent(u));
 
 }
