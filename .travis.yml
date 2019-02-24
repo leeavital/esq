@@ -3,8 +3,7 @@ language: d
 d:
   - dmd
 
-script: dub test && ./test_suite/run.sh
-  
+script: make test
 
 os:
   - linux
