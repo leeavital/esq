@@ -78,10 +78,44 @@ private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
         buf.write(" , ");
     }
 
-    auto simple = select.where.get!(EWhereSimple*);
+    buf.write(`"query": `);
+    writeWhere(false, buf, select.where);
 
-    buf.write(`"query": { `);
-    buf.write(`"term": { `);
+    return true;
+}
+
+private void writeWhere(bool shouldLeadingComma, OutBuffer buf, EWhere where)
+{
+    if (shouldLeadingComma)
+    {
+        buf.write(" , ");
+    }
+
+    if (where.peek!(EWhereSimple*))
+    {
+        auto simple = where.get!(EWhereSimple*);
+        writeWhereSimple(buf, simple);
+    }
+    else // is complex
+    {
+        auto complex = where.get!(EWhereComplex*);
+        buf.write(`{ "bool" : { `);
+        buf.write(format(`"%s" : [ `, boolOpToESOp(complex.operator)));
+        auto leadingComma = false;
+        foreach (EWhere c; complex.operands)
+        {
+            writeWhere(leadingComma, buf, c);
+            leadingComma = true;
+        }
+        buf.write(format(" ]")); // close operations
+        buf.write(" }"); // close bool
+        buf.write(" }"); // close object
+    }
+}
+
+private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
+{
+    buf.write(`{ "term": { `);
     buf.write(format(`"%s" : `, simple.field));
     switch (simple.test.typ)
     {
@@ -95,9 +129,7 @@ private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
         assert(0);
     }
     buf.write(` }`); // close term
-    buf.write(` }`); // close query
-
-    return true;
+    buf.write(` }`); // close object
 }
 
 private bool writeSize(ESelect select, OutBuffer buf)
@@ -112,7 +144,7 @@ private bool writeSize(ESelect select, OutBuffer buf)
 
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
-    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length;
+    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length > 0;
 }
 
 @nogc private string orderToJSON(Order order)
@@ -123,6 +155,19 @@ private bool writeSize(ESelect select, OutBuffer buf)
         return `"asc"`;
     case Order.Desc:
         return `"desc"`;
+    }
+}
+
+@nogc private string boolOpToESOp(BoolOp o)
+{
+    final switch (o)
+    {
+    case BoolOp.and:
+        return "must";
+    case BoolOp.or:
+        return "should";
+    case BoolOp.not:
+        return "must_not";
     }
 }
 
@@ -137,7 +182,6 @@ unittest
             Token(TokenType.NUMERIC, 200, "10"));
     e.select.where = &where;
     const s = emitResult(Target.curl, ParseResult(Type.SELECT, e, []));
-
     auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size": 10 , "query": { "term": { "foo" : 10 } } }'`;
     if (s != expected)
     {
