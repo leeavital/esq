@@ -1,5 +1,6 @@
 import std.stdio;
 import tokens;
+import std.variant;
 
 enum Type
 {
@@ -27,7 +28,7 @@ struct ESelect
     Order[] orderDirections;
 }
 
-enum BoolOp
+enum ComparisonOp
 {
     Equal
 }
@@ -38,11 +39,27 @@ enum Order
     Desc
 }
 
-struct EWhere
+enum BoolOp
 {
-    BoolOp operator;
+    and,
+    or,
+    not
+}
+
+alias EWhere = Algebraic!(EWhereSimple*, EWhereComplex*);
+
+// a single "x" = y statement
+struct EWhereSimple
+{
+    ComparisonOp operator;
     string field;
     Token test; // either a numberic or a string
+}
+
+struct EWhereComplex
+{
+    BoolOp operator;
+    EWhere[] operands;
 }
 
 struct ParseResult
@@ -123,7 +140,7 @@ class Parser
                 {
                     // error, but re-parse the WHERE statement into a temporary var
                     pr.errors ~= TokenAndError(t, "cannot have more than one WHERE clause");
-                    auto w = EWhere();
+                    EWhere w;
                     parseWhere(pr, &w); // is there better syntax for this?
                 }
                 else
@@ -185,6 +202,14 @@ class Parser
     }
 
     void parseWhere(ParseResult* pr, EWhere* where)
+    {
+        EWhereSimple* simp = new EWhereSimple();
+        parseWhereSimple(pr, simp);
+
+        *where = simp; // does this update the internal pointer?
+    }
+
+    void parseWhereSimple(ParseResult* pr, EWhereSimple* where)
     {
         // TODO: only parsing one level, support arbitrary boolean expressions
         if (peekNIsType(0, TokenType.STRING))
@@ -260,12 +285,12 @@ class Parser
     }
 
     // precondition: token must be one of the bool op tokens
-    @nogc BoolOp parseOp(Token tok)
+    @nogc ComparisonOp parseOp(Token tok)
     {
         switch (tok.typ)
         {
         case TokenType.OPEQ:
-            return BoolOp.Equal;
+            return ComparisonOp.Equal;
         default:
             assert(0);
         }
@@ -314,10 +339,10 @@ unittest
     auto p = parserFromString("select from 'foo' where 'p' = 3");
     auto e = p.parse();
     assert(e.errors.length == 0);
-    assert(e.expr.select.where.field == "p");
-    assert(e.expr.select.where.operator == BoolOp.Equal);
-    assert(e.expr.select.where.test.text == "3");
-    assert(e.expr.select.where.test.typ == TokenType.NUMERIC);
+    assert(e.expr.select.where.get!(EWhereSimple*).field == "p");
+    assert(e.expr.select.where.get!(EWhereSimple*).operator == ComparisonOp.Equal);
+    assert(e.expr.select.where.get!(EWhereSimple*).test.text == "3");
+    assert(e.expr.select.where.get!(EWhereSimple*).test.typ == TokenType.NUMERIC);
 }
 
 unittest

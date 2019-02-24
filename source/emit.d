@@ -68,7 +68,7 @@ private bool writeOrder(bool shouldLeadingComma, string[] fields, Order[] direct
 
 private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
 {
-    if (select.where == EWhere())
+    if (!select.where.hasValue)
     {
         return false;
     }
@@ -78,16 +78,18 @@ private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
         buf.write(" , ");
     }
 
+    auto simple = select.where.get!(EWhereSimple*);
+
     buf.write(`"query": { `);
     buf.write(`"term": { `);
-    buf.write(format(`"%s" : `, select.where.field));
-    switch (select.where.test.typ)
+    buf.write(format(`"%s" : `, simple.field));
+    switch (simple.test.typ)
     {
     case TokenType.NUMERIC:
-        buf.write(select.where.test.text);
+        buf.write(simple.test.text);
         break;
     case TokenType.STRING:
-        buf.write(format(`"%s"`, select.where.test.stripQuotes()));
+        buf.write(format(`"%s"`, simple.test.stripQuotes()));
         break;
     default:
         assert(0);
@@ -110,7 +112,7 @@ private bool writeSize(ESelect select, OutBuffer buf)
 
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
-    return e.lowerLimit > 0 || e.where != EWhere() || e.orderFields.length > 0;
+    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length;
 }
 
 @nogc private string orderToJSON(Order order)
@@ -131,7 +133,9 @@ unittest
     auto e = Expr();
     e.select.from = "idx";
     e.select.lowerLimit = 10;
-    e.select.where = EWhere(BoolOp.Equal, "foo", Token(TokenType.NUMERIC, 200, "10"));
+    EWhereSimple where = EWhereSimple(ComparisonOp.Equal, "foo",
+            Token(TokenType.NUMERIC, 200, "10"));
+    e.select.where = &where;
     const s = emitResult(Target.curl, ParseResult(Type.SELECT, e, []));
 
     auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size": 10 , "query": { "term": { "foo" : 10 } } }'`;
