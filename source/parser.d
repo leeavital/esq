@@ -20,11 +20,22 @@ struct ESelect
     string from;
     uint lowerLimit;
     EWhere where;
+
+    // orderFields and orderDirections are the same length. Elements of order directions
+    // will be either ASC or DESC
+    string[] orderFields;
+    Order[] orderDirections;
 }
 
 enum BoolOp
 {
     Equal
+}
+
+enum Order
+{
+    Asc,
+    Desc
 }
 
 struct EWhere
@@ -144,6 +155,26 @@ class Parser
                     e.lowerLimit = t.text.to!uint;
                 }
             }
+            else if (peekNIsType(0, TokenType.ORDER) && peekNIsType(1, TokenType.BY))
+            {
+                this.tokens.consume();
+                auto by = this.tokens.consume();
+
+                // TOOD: extract into its own function
+                if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(by, "expected symbol after ORDER BY but got EOF");
+                }
+                else
+                {
+                    string[] fields;
+                    Order[] directions;
+                    parseOrderBy(pr, fields, directions);
+                    e.orderFields = fields;
+                    e.orderDirections = directions;
+
+                }
+            }
             else
             {
                 auto badToken = this.tokens.consume();
@@ -187,6 +218,43 @@ class Parser
             {
                 pr.errors ~= TokenAndError(this.tokens.consume(),
                         "expected boolean operator after symbol in WHERE");
+            }
+        }
+    }
+
+    void parseOrderBy(ParseResult* pr, out string[] fields, out Order[] directions)
+    {
+        while (true)
+        {
+            if (!this.peekNIsType(0, TokenType.STRING))
+            {
+                pr.errors ~= TokenAndError(this.tokens.consume(),
+                        "expected symbol name after ORDER BY");
+                return;
+            }
+
+            auto field = this.tokens.consume();
+            auto order = Order.Asc;
+            if (peekNIsType(0, TokenType.ASC))
+            {
+                this.tokens.consume();
+            }
+            else if (peekNIsType(0, TokenType.DESC))
+            {
+                this.tokens.consume();
+                order = Order.Desc;
+            }
+            fields ~= field.stripQuotes();
+            directions ~= order;
+
+            if (peekNIsType(0, TokenType.COMMA))
+            {
+                // if we see a comma, we have fields to include in the ORDER BY clause
+                this.tokens.consume();
+            }
+            else
+            {
+                return;
             }
         }
     }
@@ -250,4 +318,13 @@ unittest
     assert(e.expr.select.where.operator == BoolOp.Equal);
     assert(e.expr.select.where.test.text == "3");
     assert(e.expr.select.where.test.typ == TokenType.NUMERIC);
+}
+
+unittest
+{
+    auto p = parserFromString("select from 'foo' order by 'bar' DESC");
+    auto e = p.parse();
+    assert(e.errors.length == 0);
+    assert(e.expr.select.orderFields == ["bar"]);
+    assert(e.expr.select.orderDirections == [Order.Desc]);
 }
