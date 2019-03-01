@@ -1,0 +1,3 @@
+SELECT FROM "b" ORDER BY 4
+                         ^
+expected symbol name after ORDER BY
