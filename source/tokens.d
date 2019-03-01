@@ -2,6 +2,10 @@ import std.stdio;
 
 enum TokenType
 {
+    ALTER,
+    ASC,
+    BY,
+    DESC,
     SELECT,
     FROM,
     STAR,
@@ -11,7 +15,8 @@ enum TokenType
     STRING,
     NUMERIC,
     LIMIT,
-    OPEQ
+    OPEQ,
+    ORDER,
 }
 
 struct Token
@@ -153,6 +158,31 @@ class TokenStream
         {
             auto text = this.source[this.peekPos .. this.peekPos + "limit".length];
             nextToken = Token(TokenType.LIMIT, this.peekPos, text);
+        }
+        else if (this.peekChars("order"))
+        {
+            auto text = this.source[this.peekPos .. this.peekPos + "order".length];
+            nextToken = Token(TokenType.ORDER, this.peekPos, text);
+        }
+        else if (this.peekChars("by"))
+        {
+            auto text = this.source[this.peekPos .. this.peekPos + "by".length];
+            nextToken = Token(TokenType.BY, this.peekPos, text);
+        }
+        else if (this.peekChars("alter"))
+        {
+            auto text = this.source[this.peekPos .. this.peekPos + "alter".length];
+            nextToken = Token(TokenType.ALTER, this.peekPos, text);
+        }
+        else if (this.peekChars("asc"))
+        {
+            auto text = this.source[this.peekPos .. this.peekPos + "asc".length];
+            nextToken = Token(TokenType.ASC, this.peekPos, text);
+        }
+        else if (this.peekChars("desc"))
+        {
+            auto text = this.source[this.peekPos .. this.peekPos + "desc".length];
+            nextToken = Token(TokenType.DESC, this.peekPos, text);
         }
         else if (this.peekChars("*"))
         {
@@ -364,5 +394,7 @@ unittest
     check(`WHERE "foo" =1`, ["WHERE", `"foo"`, `=`, `1`]);
     check(`WHERE "foo"=1`, ["WHERE", `"foo"`, `=`, `1`]);
     check(`WHERE "foo" = 1`, ["WHERE", `"foo"`, `=`, `1`]);
+    check(`ALTER WHERE BY ORDER`, ["ALTER", "WHERE", "BY", "ORDER"]);
+    check(`ASC DESC`, ["ASC", "DESC"]);
     finish();
 }
