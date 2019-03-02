@@ -3,8 +3,8 @@
 set -e
 
 pushd "$(dirname "$0")/.." > /dev/null
-dub build --build=release
-export PATH=$PATH:$PWD
+dub build
+export PATH=$PWD:$PATH
 popd > /dev/null
 
 pushd "$(dirname "$0")" > /dev/null

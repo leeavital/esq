@@ -29,6 +29,9 @@ string emitResult(Target t, ParseResult input)
             buf.write(` -H "Content-Type: application/json" -d `);
             buf.write(`'{ `); // start main request
             bool shouldLeadingComma = writeSize(input.expr.select, buf);
+            shouldLeadingComma = writeOrder(shouldLeadingComma,
+                    input.expr.select.orderFields, input.expr.select.orderDirections, buf)
+                || shouldLeadingComma;
             shouldLeadingComma = writeQuery(shouldLeadingComma, input.expr.select, buf)
                 || shouldLeadingComma;
             buf.write(" }'"); // close main request
@@ -36,6 +39,31 @@ string emitResult(Target t, ParseResult input)
         break;
     }
     return buf.toString();
+}
+
+private bool writeOrder(bool shouldLeadingComma, string[] fields, Order[] directions, OutBuffer buf)
+{
+    if (fields.length == 0)
+    {
+        return false; // TODO: we can actually return shouldLeadingComma here with some cleanup
+    }
+
+    if (shouldLeadingComma)
+    {
+        buf.write(" ,");
+    }
+
+    buf.write(`"order" : [ `);
+    for (int i = 0; i < fields.length; i++)
+    {
+        buf.write(format(`{ "%s" : %s }`, fields[i], orderToJSON(directions[i])));
+        if (i + 1 < fields.length)
+        {
+            buf.write(" , ");
+        }
+    }
+    buf.write(" ]");
+    return true;
 }
 
 private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
@@ -82,7 +110,18 @@ private bool writeSize(ESelect select, OutBuffer buf)
 
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
-    return e.lowerLimit > 0 || e.where != EWhere();
+    return e.lowerLimit > 0 || e.where != EWhere() || e.orderFields.length > 0;
+}
+
+@nogc private string orderToJSON(Order order)
+{
+    final switch (order)
+    {
+    case Order.Asc:
+        return `"asc"`;
+    case Order.Desc:
+        return `"desc"`;
+    }
 }
 
 unittest
