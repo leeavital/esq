@@ -5,6 +5,7 @@ enum TokenType
     ALTER,
     ASC,
     BY,
+    COMMA,
     DESC,
     SELECT,
     FROM,
@@ -187,6 +188,10 @@ class TokenStream
         else if (this.peekChars("*"))
         {
             nextToken = Token(TokenType.STAR, this.peekPos, "*");
+        }
+        else if (this.peekChars(","))
+        {
+            nextToken = Token(TokenType.COMMA, this.peekPos, ",");
         }
         else if (this.peekChars("("))
         {
@@ -395,6 +400,6 @@ unittest
     check(`WHERE "foo"=1`, ["WHERE", `"foo"`, `=`, `1`]);
     check(`WHERE "foo" = 1`, ["WHERE", `"foo"`, `=`, `1`]);
     check(`ALTER WHERE BY ORDER`, ["ALTER", "WHERE", "BY", "ORDER"]);
-    check(`ASC DESC`, ["ASC", "DESC"]);
+    check(`ASC, DESC ,`, ["ASC", ",", "DESC", ","]);
     finish();
 }
