@@ -166,11 +166,8 @@ class TokenStream
 
         if (peekLiteralToken(&nextToken))
         { /* do nothing  */ }
-        else if (this.peekChars("\"") || this.peekChars("'"))
-        {
-            auto str = peekQuotedString();
-            nextToken = Token(TokenType.STRING, this.peekPos, str);
-        }
+        else if (peekQuotedString(&nextToken))
+        { /* do nothing */ }
         else if (this.peekNumeric(&nextToken))
         { /* do nothing */ }
 
@@ -204,8 +201,13 @@ class TokenStream
         return longestMatch > 0;
     }
 
-    @nogc private string peekQuotedString()
+    @nogc private bool peekQuotedString(Token* tok)
     {
+        if (!(this.peekChars("\"") || this.peekChars("'")))
+        {
+            return false;
+        }
+
         auto delim = this.source[this.peekPos];
         assert(delim == '\'' || delim == '"');
         ulong n = this.peekPos + 1;
@@ -217,12 +219,16 @@ class TokenStream
 
         if (n == this.source.length)
         {
-            return this.source[this.peekPos .. $];
+            tok.text = this.source[this.peekPos .. $];
         }
         else
         {
-            return this.source[this.peekPos .. n];
+            tok.text = this.source[this.peekPos .. n];
         }
+
+        tok.startPos = this.peekPos;
+        tok.typ = TokenType.STRING;
+        return true;
     }
 
     @nogc private bool peekNumeric(Token* t)
