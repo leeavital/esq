@@ -1,5 +1,6 @@
 import std.stdio;
 import tokens;
+import std.variant;
 
 enum Type
 {
@@ -27,7 +28,7 @@ struct ESelect
     Order[] orderDirections;
 }
 
-enum BoolOp
+enum ComparisonOp
 {
     Equal
 }
@@ -38,11 +39,27 @@ enum Order
     Desc
 }
 
-struct EWhere
+enum BoolOp
 {
-    BoolOp operator;
+    and,
+    or,
+    not
+}
+
+alias EWhere = Algebraic!(EWhereSimple*, EWhereComplex*);
+
+// a single "x" = y statement
+struct EWhereSimple
+{
+    ComparisonOp operator;
     string field;
     Token test; // either a numberic or a string
+}
+
+struct EWhereComplex
+{
+    BoolOp operator;
+    EWhere[] operands;
 }
 
 struct ParseResult
@@ -123,12 +140,11 @@ class Parser
                 {
                     // error, but re-parse the WHERE statement into a temporary var
                     pr.errors ~= TokenAndError(t, "cannot have more than one WHERE clause");
-                    auto w = EWhere();
-                    parseWhere(pr, &w); // is there better syntax for this?
+                    parseWhere(pr); // call the parser anyway, to get errors
                 }
                 else
                 {
-                    parseWhere(pr, &e.where);
+                    e.where = parseWhere(pr);
                     didSeeWhere = true;
                 }
             }
@@ -184,8 +200,85 @@ class Parser
         }
     }
 
-    void parseWhere(ParseResult* pr, EWhere* where)
+    EWhere parseWhere(ParseResult* pr)
     {
+        // parse a simple where
+        EWhere[] terms = [parseWhere_1(pr)];
+
+        while (this.peekNIsType(0, TokenType.OPOR))
+        {
+            this.tokens.consume();
+            auto next = parseWhere_1(pr);
+            terms ~= next;
+        }
+
+        if (terms.length == 1)
+        {
+            return terms[0];
+        }
+        else
+        {
+            EWhere e = new EWhereComplex(BoolOp.or, terms);
+            return e;
+        }
+    }
+
+    EWhere parseWhere_1(ParseResult* pr)
+    {
+        EWhere first = parseWhere_2(pr);
+        EWhere[] exprs = [first];
+        while (peekNIsType(0, TokenType.OPAND))
+        {
+            this.tokens.consume();
+            EWhere next = parseWhere_2(pr);
+            exprs ~= next;
+        }
+
+        if (exprs.length == 1)
+        {
+            return exprs[0];
+        }
+        else
+        {
+            EWhere combined;
+            combined = new EWhereComplex(BoolOp.and, exprs);
+            return combined;
+        }
+    }
+
+    EWhere parseWhere_2(ParseResult* pr)
+    {
+        if (peekNIsType(0, TokenType.LPAREN))
+        {
+            auto lparen = this.tokens.consume();
+            EWhere w = parseWhere(pr);
+            if (this.tokens.isEOF())
+            {
+                pr.errors ~= TokenAndError(lparen, "unterminated parenthesis");
+                return w;
+            }
+            else if (peekNIsType(0, TokenType.RPAREN))
+            {
+                this.tokens.consume();
+                return w;
+            }
+            else
+            {
+                pr.errors ~= TokenAndError(this.tokens.consume(),
+                        "expected right paren to close lparen expression");
+                return w;
+            }
+        }
+        else
+        {
+            return parseWhere_3(pr);
+        }
+    }
+
+    EWhere parseWhere_3(ParseResult* pr)
+    {
+        EWhereSimple* where = new EWhereSimple();
+
         // TODO: only parsing one level, support arbitrary boolean expressions
         if (peekNIsType(0, TokenType.STRING))
         {
@@ -220,6 +313,9 @@ class Parser
                         "expected boolean operator after symbol in WHERE");
             }
         }
+
+        EWhere e = where;
+        return e;
     }
 
     void parseOrderBy(ParseResult* pr, out string[] fields, out Order[] directions)
@@ -260,12 +356,12 @@ class Parser
     }
 
     // precondition: token must be one of the bool op tokens
-    @nogc BoolOp parseOp(Token tok)
+    @nogc ComparisonOp parseOp(Token tok)
     {
         switch (tok.typ)
         {
         case TokenType.OPEQ:
-            return BoolOp.Equal;
+            return ComparisonOp.Equal;
         default:
             assert(0);
         }
@@ -314,10 +410,10 @@ unittest
     auto p = parserFromString("select from 'foo' where 'p' = 3");
     auto e = p.parse();
     assert(e.errors.length == 0);
-    assert(e.expr.select.where.field == "p");
-    assert(e.expr.select.where.operator == BoolOp.Equal);
-    assert(e.expr.select.where.test.text == "3");
-    assert(e.expr.select.where.test.typ == TokenType.NUMERIC);
+    assert(e.expr.select.where.get!(EWhereSimple*).field == "p");
+    assert(e.expr.select.where.get!(EWhereSimple*).operator == ComparisonOp.Equal);
+    assert(e.expr.select.where.get!(EWhereSimple*).test.text == "3");
+    assert(e.expr.select.where.get!(EWhereSimple*).test.typ == TokenType.NUMERIC);
 }
 
 unittest

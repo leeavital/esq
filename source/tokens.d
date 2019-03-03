@@ -17,6 +17,8 @@ enum TokenType
     NUMERIC,
     LIMIT,
     OPEQ,
+    OPAND,
+    OPOR,
     ORDER,
 }
 
@@ -204,6 +206,16 @@ class TokenStream
         else if (this.peekChars("="))
         {
             nextToken = Token(TokenType.OPEQ, this.peekPos, "=");
+        }
+        else if (this.peekChars("AND"))
+        {
+            nextToken = Token(TokenType.OPAND, this.peekPos,
+                    this.source[this.peekPos .. this.peekPos + "and".length]);
+        }
+        else if (this.peekChars("OR"))
+        {
+            nextToken = Token(TokenType.OPOR, this.peekPos,
+                    this.source[this.peekPos .. this.peekPos + "or".length]);
         }
         else if (this.peekChars("\"") || this.peekChars("'"))
         {
@@ -401,5 +413,6 @@ unittest
     check(`WHERE "foo" = 1`, ["WHERE", `"foo"`, `=`, `1`]);
     check(`ALTER WHERE BY ORDER`, ["ALTER", "WHERE", "BY", "ORDER"]);
     check(`ASC, DESC ,`, ["ASC", ",", "DESC", ","]);
+    check(`WHERE "foo" OR 1 AND`, [`WHERE`, `"foo"`, `OR`, `1`, `AND`]);
     finish();
 }
