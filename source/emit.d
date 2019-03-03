@@ -1,5 +1,5 @@
 import parser;
-import tokens;
+import lexer;
 
 import std.outbuffer;
 import std.conv;

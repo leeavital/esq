@@ -57,6 +57,27 @@ struct Token
     }
 }
 
+immutable TokenType[string] literalTokens;
+static this()
+{
+    literalTokens["from"] = TokenType.FROM;
+    literalTokens["limit"] = TokenType.LIMIT;
+    literalTokens["select"] = TokenType.SELECT;
+    literalTokens["where"] = TokenType.WHERE;
+    literalTokens["order"] = TokenType.ORDER;
+    literalTokens["by"] = TokenType.BY;
+    literalTokens["alter"] = TokenType.ALTER;
+    literalTokens["asc"] = TokenType.ASC;
+    literalTokens["desc"] = TokenType.DESC;
+    literalTokens["*"] = TokenType.STAR;
+    literalTokens[","] = TokenType.COMMA;
+    literalTokens["("] = TokenType.LPAREN;
+    literalTokens[")"] = TokenType.RPAREN;
+    literalTokens["="] = TokenType.OPEQ;
+    literalTokens["and"] = TokenType.OPAND;
+    literalTokens["or"] = TokenType.OPOR;
+}
+
 class TokenStream
 {
 
@@ -142,90 +163,16 @@ class TokenStream
         }
 
         Token nextToken = Token();
-        if (this.peekChars("select"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "select".length];
-            nextToken = Token(TokenType.SELECT, this.peekPos, text);
-        }
-        else if (this.peekChars("from"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "from".length];
-            nextToken = Token(TokenType.FROM, this.peekPos, text);
-        }
-        else if (this.peekChars("where"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "where".length];
-            nextToken = Token(TokenType.WHERE, this.peekPos, text);
-        }
-        else if (this.peekChars("limit"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "limit".length];
-            nextToken = Token(TokenType.LIMIT, this.peekPos, text);
-        }
-        else if (this.peekChars("order"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "order".length];
-            nextToken = Token(TokenType.ORDER, this.peekPos, text);
-        }
-        else if (this.peekChars("by"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "by".length];
-            nextToken = Token(TokenType.BY, this.peekPos, text);
-        }
-        else if (this.peekChars("alter"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "alter".length];
-            nextToken = Token(TokenType.ALTER, this.peekPos, text);
-        }
-        else if (this.peekChars("asc"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "asc".length];
-            nextToken = Token(TokenType.ASC, this.peekPos, text);
-        }
-        else if (this.peekChars("desc"))
-        {
-            auto text = this.source[this.peekPos .. this.peekPos + "desc".length];
-            nextToken = Token(TokenType.DESC, this.peekPos, text);
-        }
-        else if (this.peekChars("*"))
-        {
-            nextToken = Token(TokenType.STAR, this.peekPos, "*");
-        }
-        else if (this.peekChars(","))
-        {
-            nextToken = Token(TokenType.COMMA, this.peekPos, ",");
-        }
-        else if (this.peekChars("("))
-        {
-            nextToken = Token(TokenType.LPAREN, this.peekPos, "(");
-        }
-        else if (this.peekChars(")"))
-        {
-            nextToken = Token(TokenType.RPAREN, this.peekPos, ")");
-        }
-        else if (this.peekChars("="))
-        {
-            nextToken = Token(TokenType.OPEQ, this.peekPos, "=");
-        }
-        else if (this.peekChars("AND"))
-        {
-            nextToken = Token(TokenType.OPAND, this.peekPos,
-                    this.source[this.peekPos .. this.peekPos + "and".length]);
-        }
-        else if (this.peekChars("OR"))
-        {
-            nextToken = Token(TokenType.OPOR, this.peekPos,
-                    this.source[this.peekPos .. this.peekPos + "or".length]);
-        }
+
+        if (peekLiteralToken(&nextToken))
+        { /* do nothing  */ }
         else if (this.peekChars("\"") || this.peekChars("'"))
         {
             auto str = peekQuotedString();
             nextToken = Token(TokenType.STRING, this.peekPos, str);
         }
         else if (this.peekNumeric(&nextToken))
-        {
-            // do nothing
-        }
+        { /* do nothing */ }
 
         if (nextToken == Token())
         {
@@ -238,6 +185,23 @@ class TokenStream
 
         this.peekPos = nextToken.endPos();
         this.peek = this.peek ~ nextToken;
+    }
+
+    @nogc bool peekLiteralToken(Token* tok)
+    {
+        // we need to take the longest matching literal (e.g. take ORDER over OR)
+        ulong longestMatch = 0;
+        foreach (const str, typ; literalTokens)
+        {
+            if (this.peekChars(str) && str.length > longestMatch)
+            {
+                longestMatch = str.length;
+                tok.typ = typ;
+                tok.startPos = this.peekPos;
+                tok.text = this.source[this.peekPos .. this.peekPos + longestMatch];
+            }
+        }
+        return longestMatch > 0;
     }
 
     @nogc private string peekQuotedString()
