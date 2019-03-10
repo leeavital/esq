@@ -36,7 +36,13 @@ struct Token
     // the following are specific to certain token types
     string stripQuotes()
     {
-        return this.text[1 .. this.text.length - 1];
+        assert(this.typ == TokenType.STRING);
+        if (this.text[0] == '"' || this.text[0] == '\'')
+        {
+            return this.text[1 .. this.text.length - 1];
+        }
+        return this.text;
+
     }
 
     bool numericIsNegative()
@@ -170,6 +176,10 @@ class TokenStream
         { /* do nothing */ }
         else if (this.peekNumeric(&nextToken))
         { /* do nothing */ }
+        else
+        {
+            this.peekUnquotedString(&nextToken); // bail out and treat the bare strings as symbols
+        }
 
         if (nextToken == Token())
         {
@@ -226,6 +236,32 @@ class TokenStream
             tok.text = this.source[this.peekPos .. n];
         }
 
+        tok.startPos = this.peekPos;
+        tok.typ = TokenType.STRING;
+        return true;
+    }
+
+    @nogc bool peekUnquotedString(Token* tok)
+    {
+        import std.ascii;
+
+        if (this.source[this.peekPos] == ' ')
+        {
+            return false;
+        }
+
+        bool isValidSymChar(ulong n) {
+          auto c = this.source[n];
+          return isAlphaNum(c) || c == '_' || c == '.';
+        }
+
+        auto n = this.peekPos;
+        while (n != this.source.length && isValidSymChar(n))
+        {
+            n++;
+        }
+
+        tok.text = this.source[this.peekPos .. n];
         tok.startPos = this.peekPos;
         tok.typ = TokenType.STRING;
         return true;
@@ -384,5 +420,8 @@ unittest
     check(`ALTER WHERE BY ORDER`, ["ALTER", "WHERE", "BY", "ORDER"]);
     check(`ASC, DESC ,`, ["ASC", ",", "DESC", ","]);
     check(`WHERE "foo" OR 1 AND`, [`WHERE`, `"foo"`, `OR`, `1`, `AND`]);
+    check(`SELECT WHERE foo = 2`, [`SELECT`, `WHERE`, `foo`, `=`, `2`]);
+    check(`foo=`, [`foo`, `=`]);
+    check(`foo`, [`foo`]);
     finish();
 }
