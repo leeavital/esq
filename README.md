@@ -39,5 +39,5 @@ Example Use
 1. select a list of user IDs ordered by username in descending order from a remote host.
 
     ```
-    esq 'SELECT id FROM users WHERE region = 'US' ORDER BY username DESC
+    esq 'SELECT id FROM users WHERE region = 'US' ORDER BY username DESC'
     ```
