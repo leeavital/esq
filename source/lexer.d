@@ -7,19 +7,21 @@ enum TokenType
     BY,
     COMMA,
     DESC,
-    SELECT,
     FROM,
-    STAR,
-    WHERE,
-    LPAREN,
-    RPAREN,
-    STRING,
-    NUMERIC,
+    HOST,
     LIMIT,
-    OPEQ,
+    LPAREN,
+    NUMERIC,
+    ON,
     OPAND,
+    OPEQ,
     OPOR,
     ORDER,
+    RPAREN,
+    SELECT,
+    STAR,
+    STRING,
+    WHERE,
 }
 
 struct Token
@@ -66,22 +68,24 @@ struct Token
 immutable TokenType[string] literalTokens;
 static this()
 {
-    literalTokens["from"] = TokenType.FROM;
-    literalTokens["limit"] = TokenType.LIMIT;
-    literalTokens["select"] = TokenType.SELECT;
-    literalTokens["where"] = TokenType.WHERE;
-    literalTokens["order"] = TokenType.ORDER;
-    literalTokens["by"] = TokenType.BY;
-    literalTokens["alter"] = TokenType.ALTER;
-    literalTokens["asc"] = TokenType.ASC;
-    literalTokens["desc"] = TokenType.DESC;
-    literalTokens["*"] = TokenType.STAR;
-    literalTokens[","] = TokenType.COMMA;
     literalTokens["("] = TokenType.LPAREN;
     literalTokens[")"] = TokenType.RPAREN;
+    literalTokens["*"] = TokenType.STAR;
+    literalTokens[","] = TokenType.COMMA;
     literalTokens["="] = TokenType.OPEQ;
+    literalTokens["alter"] = TokenType.ALTER;
     literalTokens["and"] = TokenType.OPAND;
+    literalTokens["asc"] = TokenType.ASC;
+    literalTokens["by"] = TokenType.BY;
+    literalTokens["desc"] = TokenType.DESC;
+    literalTokens["from"] = TokenType.FROM;
+    literalTokens["limit"] = TokenType.LIMIT;
+    literalTokens["on"] = TokenType.ON;
     literalTokens["or"] = TokenType.OPOR;
+    literalTokens["order"] = TokenType.ORDER;
+    literalTokens["select"] = TokenType.SELECT;
+    literalTokens["where"] = TokenType.WHERE;
+    literalTokens["host"] = TokenType.HOST;
 }
 
 class TokenStream
@@ -250,9 +254,10 @@ class TokenStream
             return false;
         }
 
-        bool isValidSymChar(ulong n) {
-          auto c = this.source[n];
-          return isAlphaNum(c) || c == '_' || c == '.';
+        bool isValidSymChar(ulong n)
+        {
+            auto c = this.source[n];
+            return isAlphaNum(c) || c == '_' || c == '.';
         }
 
         auto n = this.peekPos;
