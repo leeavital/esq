@@ -21,8 +21,8 @@ string emitResult(Target t, ParseResult input)
     case Type.SELECT:
         auto hasBody = shouldWriteQueryBody(input.expr.select);
 
-        buf.write(format("curl %shttp://localhost:9200/%s/_search?pretty=true",
-                hasBody ? "-XPOST " : "", input.expr.select.from));
+        buf.write(format("curl%s %s/%s/_search?pretty=true", hasBody
+                ? " -XPOST" : "", getHost(input), input.expr.select.from));
 
         if (hasBody)
         {
@@ -168,6 +168,48 @@ private bool writeSize(ESelect select, OutBuffer buf)
         return "should";
     case BoolOp.not:
         return "must_not";
+    }
+}
+
+string getHost(ParseResult pr)
+{
+    import std.algorithm.searching : startsWith;
+
+    if (pr.host != "")
+    {
+        if (pr.host.startsWith("http://") || pr.host.startsWith("https://"))
+        {
+            return pr.host;
+        }
+        return "http://" ~ pr.host;
+    }
+    return "http://localhost:9200";
+}
+
+unittest
+{
+    import std.stdio;
+
+    string[] errors = [];
+    void check(string input, string output)
+    {
+        auto p = ParseResult();
+        p.host = input;
+        auto s = getHost(p);
+        if (s != output)
+        {
+            errors ~= format("expected getHost(%s) to be %s, but was %s", input, output, s);
+        }
+    }
+
+    check("", "http://localhost:9200");
+    check("localhost:1000", "http://localhost:1000");
+    check("https://my.cool.host", "https://my.cool.host");
+
+    if (errors.length > 0)
+    {
+        writefln("%s", errors);
+        assert(0);
     }
 }
 
