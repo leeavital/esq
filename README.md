@@ -10,7 +10,7 @@ By emitting `curl` commands, `esq` can be used without being installed on a
 client machine, and even without HTTP access to the host where elasticsearch is
 running. If you have a terminal session, you can pipe or copy the output of `esq`
 into it. For example `esq 'SELECT FROM "myindex" LIMIT 10' | ssh myelasticsearchhost` or
-`esq 'SELECT FROM "myindex" LIMIT 10' | kubectl exec -it myelasticsearchcontainer`.
+`esq 'SELECT FROM "myindex" LIMIT 10' | kubectl exec -it myelasticsearchtoolbox`.
 
 While the ES query syntax is extremely powerful, it can be unfriendly. It's
 hard to remember the exact syntax if you're writing not writing queries every day.
@@ -33,5 +33,11 @@ Example Use
 1. select all ids and usenames from a 'user' index where the region field is "US". Hits `localhost:9200` by default.
 
     ```
-    esq 'SELECT (id, name) FROM  users WHERE region == "US"'
+    esq 'SELECT id, name FROM  users WHERE region = "US"'
+    ```
+
+1. select a list of user IDs ordered by username in descending order from a remote host.
+
+    ```
+    esq 'SELECT id FROM users WHERE region = 'US' ORDER BY username DESC
     ```
