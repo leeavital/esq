@@ -29,6 +29,8 @@ string emitResult(Target t, ParseResult input)
             buf.write(` -H "Content-Type: application/json" -d `);
             buf.write(`'{ `); // start main request
             bool shouldLeadingComma = writeSize(input.expr.select, buf);
+            shouldLeadingComma = writeSourceFilter(shouldLeadingComma,
+                    input.expr.select.fieldNames, buf) || shouldLeadingComma;
             shouldLeadingComma = writeOrder(shouldLeadingComma,
                     input.expr.select.orderFields, input.expr.select.orderDirections, buf)
                 || shouldLeadingComma;
@@ -132,6 +134,32 @@ private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
     buf.write(` }`); // close object
 }
 
+private bool writeSourceFilter(bool shouldLeadingComma, string[] fields, OutBuffer buf)
+{
+    if (fields.length == 0)
+    {
+        return false;
+    }
+
+    if (shouldLeadingComma)
+    {
+        buf.write(" , ");
+    }
+
+    buf.write(`"_source" : [ `);
+    for (int i = 0; i < fields.length; i++)
+    {
+        auto name = fields[i];
+        buf.write(format(`"%s"`, name));
+        if (i != fields.length - 1)
+        {
+            buf.write(" , ");
+        }
+    }
+    buf.write(` ]`);
+    return true;
+}
+
 private bool writeSize(ESelect select, OutBuffer buf)
 {
     if (select.lowerLimit > 0)
@@ -144,7 +172,8 @@ private bool writeSize(ESelect select, OutBuffer buf)
 
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
-    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length > 0;
+    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length > 0
+        || e.fieldNames.length > 0;
 }
 
 @nogc private string orderToJSON(Order order)
