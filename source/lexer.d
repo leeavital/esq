@@ -36,7 +36,7 @@ struct Token
     }
 
     // the following are specific to certain token types
-    string stripQuotes()
+    @nogc string stripQuotes()
     {
         assert(this.typ == TokenType.STRING);
         if (this.text[0] == '"' || this.text[0] == '\'')
