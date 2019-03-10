@@ -4,7 +4,8 @@ import std.variant;
 
 enum Type
 {
-    SELECT
+    SELECT,
+    ALTER_INDEX
 }
 
 ///  expression types
@@ -13,6 +14,7 @@ enum Type
 union Expr
 {
     ESelect select;
+    EAlter alter;
 }
 
 struct ESelect
@@ -26,6 +28,13 @@ struct ESelect
     // will be either ASC or DESC
     string[] orderFields;
     Order[] orderDirections;
+}
+
+struct EAlter
+{
+    string index;
+    string[] keys;
+    Token[] values;
 }
 
 enum ComparisonOp
@@ -94,8 +103,7 @@ class Parser
 
         ParseResult parseResult;
 
-        auto token = this.tokens.peekOne();
-        if (token.typ == TokenType.SELECT)
+        if (peekNIsType(0, TokenType.SELECT))
         {
             this.tokens.consume();
             ESelect eselect;
@@ -105,8 +113,18 @@ class Parser
             parseResult.expr = e;
             return parseResult;
         }
-
-        assert(0);
+        else if (peekNIsType(0, TokenType.ALTER) && peekNIsType(1, TokenType.INDEX))
+        {
+            this.tokens.consume();
+            this.tokens.consume();
+            parseAlter(&parseResult, &parseResult.expr.alter);
+            parseResult.typ = Type.ALTER_INDEX;
+            return parseResult;
+        }
+        else
+        {
+            assert(0);
+        }
     }
 
     void parseSelect(ParseResult* pr, ESelect* e)
@@ -394,6 +412,87 @@ class Parser
             else
             {
                 return;
+            }
+        }
+    }
+
+    void parseAlter(ParseResult* pr, EAlter* a)
+    {
+        if (peekNIsType(0, TokenType.STRING))
+        {
+            a.index = this.tokens.consume().stripQuotes();
+        }
+        else
+        {
+            pr.errors ~= TokenAndError(this.tokens.consume(), "expected index name");
+        }
+
+        while (!this.tokens.isEOF())
+        {
+            if (peekNIsType(0, TokenType.ON) && peekNIsType(1, TokenType.HOST)
+                    && peekNIsType(2, TokenType.STRING))
+            {
+                this.tokens.consume(); //ON
+                this.tokens.consume(); //HOST
+                pr.host = this.tokens.consume().stripQuotes();
+                continue;
+            }
+
+            if (!peekNIsType(0, TokenType.STRING))
+            {
+                pr.errors ~= TokenAndError(this.tokens.consume(),
+                        "expected field name in ALTER statement");
+                continue;
+            }
+
+            if (!peekNIsType(1, TokenType.OPEQ))
+            {
+                auto field = this.tokens.consume(); // consume STRING
+                if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(field, "expected '=' after field name");
+                }
+                else
+                {
+                    pr.errors ~= TokenAndError(this.tokens.consume(),
+                            "expected '=' after field name");
+                }
+                continue;
+            }
+
+            if (!peekNIsType(2, TokenType.STRING) && !peekNIsType(2, TokenType.NUMERIC))
+            {
+                this.tokens.consume(); // Symbox
+                auto eq = this.tokens.consume(); //Equal
+                if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(eq,
+                            "expected number or string to follow '=' in ALTER statement");
+                }
+                else
+                {
+                    pr.errors ~= TokenAndError(this.tokens.consume(),
+                            "expected number or string to follow '=' in ALTER statement");
+                }
+                continue;
+            }
+            auto field = this.tokens.consume().stripQuotes();
+            this.tokens.consume(); // =
+            auto value = this.tokens.consume();
+            a.keys ~= field;
+            a.values ~= value;
+
+            if (this.tokens.isEOF())
+            {
+                return;
+            }
+            else if (peekNIsType(0, TokenType.COMMA))
+            {
+                this.tokens.consume();
+            }
+            else
+            {
+                pr.errors ~= TokenAndError(value, "expected comma after value");
             }
         }
     }

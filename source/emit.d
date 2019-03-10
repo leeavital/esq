@@ -39,6 +39,11 @@ string emitResult(Target t, ParseResult input)
             buf.write(" }'"); // close main request
         }
         break;
+    case Type.ALTER_INDEX:
+        import std.stdio;
+
+        writefln("ALTER_INDEX unsupported in emit");
+        assert(0);
     }
     return buf.toString();
 }
