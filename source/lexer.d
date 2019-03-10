@@ -36,7 +36,13 @@ struct Token
     // the following are specific to certain token types
     string stripQuotes()
     {
-        return this.text[1 .. this.text.length - 1];
+        assert(this.typ == TokenType.STRING);
+        if (this.text[0] == '"' || this.text[0] == '\'')
+        {
+            return this.text[1 .. this.text.length - 1];
+        }
+        return this.text;
+
     }
 
     bool numericIsNegative()
@@ -166,13 +172,14 @@ class TokenStream
 
         if (peekLiteralToken(&nextToken))
         { /* do nothing  */ }
-        else if (this.peekChars("\"") || this.peekChars("'"))
-        {
-            auto str = peekQuotedString();
-            nextToken = Token(TokenType.STRING, this.peekPos, str);
-        }
+        else if (peekQuotedString(&nextToken))
+        { /* do nothing */ }
         else if (this.peekNumeric(&nextToken))
         { /* do nothing */ }
+        else
+        {
+            this.peekUnquotedString(&nextToken); // bail out and treat the bare strings as symbols
+        }
 
         if (nextToken == Token())
         {
@@ -204,8 +211,13 @@ class TokenStream
         return longestMatch > 0;
     }
 
-    @nogc private string peekQuotedString()
+    @nogc private bool peekQuotedString(Token* tok)
     {
+        if (!(this.peekChars("\"") || this.peekChars("'")))
+        {
+            return false;
+        }
+
         auto delim = this.source[this.peekPos];
         assert(delim == '\'' || delim == '"');
         ulong n = this.peekPos + 1;
@@ -217,12 +229,42 @@ class TokenStream
 
         if (n == this.source.length)
         {
-            return this.source[this.peekPos .. $];
+            tok.text = this.source[this.peekPos .. $];
         }
         else
         {
-            return this.source[this.peekPos .. n];
+            tok.text = this.source[this.peekPos .. n];
         }
+
+        tok.startPos = this.peekPos;
+        tok.typ = TokenType.STRING;
+        return true;
+    }
+
+    @nogc bool peekUnquotedString(Token* tok)
+    {
+        import std.ascii;
+
+        if (this.source[this.peekPos] == ' ')
+        {
+            return false;
+        }
+
+        bool isValidSymChar(ulong n) {
+          auto c = this.source[n];
+          return isAlphaNum(c) || c == '_' || c == '.';
+        }
+
+        auto n = this.peekPos;
+        while (n != this.source.length && isValidSymChar(n))
+        {
+            n++;
+        }
+
+        tok.text = this.source[this.peekPos .. n];
+        tok.startPos = this.peekPos;
+        tok.typ = TokenType.STRING;
+        return true;
     }
 
     @nogc private bool peekNumeric(Token* t)
@@ -378,5 +420,8 @@ unittest
     check(`ALTER WHERE BY ORDER`, ["ALTER", "WHERE", "BY", "ORDER"]);
     check(`ASC, DESC ,`, ["ASC", ",", "DESC", ","]);
     check(`WHERE "foo" OR 1 AND`, [`WHERE`, `"foo"`, `OR`, `1`, `AND`]);
+    check(`SELECT WHERE foo = 2`, [`SELECT`, `WHERE`, `foo`, `=`, `2`]);
+    check(`foo=`, [`foo`, `=`]);
+    check(`foo`, [`foo`]);
     finish();
 }
