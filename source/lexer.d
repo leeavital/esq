@@ -9,6 +9,7 @@ enum TokenType
     DESC,
     FROM,
     HOST,
+    INDEX,
     LIMIT,
     LPAREN,
     NUMERIC,
@@ -79,6 +80,7 @@ static this()
     literalTokens["by"] = TokenType.BY;
     literalTokens["desc"] = TokenType.DESC;
     literalTokens["from"] = TokenType.FROM;
+    literalTokens["index"] = TokenType.INDEX;
     literalTokens["limit"] = TokenType.LIMIT;
     literalTokens["on"] = TokenType.ON;
     literalTokens["or"] = TokenType.OPOR;
