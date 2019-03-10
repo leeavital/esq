@@ -67,6 +67,7 @@ struct ParseResult
     Type typ;
     Expr expr;
     TokenAndError[] errors;
+    string host;
 }
 
 struct TokenAndError
@@ -191,11 +192,18 @@ class Parser
 
                 }
             }
+            else if (peekNIsType(0, TokenType.ON) && peekNIsType(1,
+                    TokenType.HOST) && peekNIsType(2, TokenType.STRING))
+            {
+                this.tokens.consume(); //ON
+                this.tokens.consume(); //HOST
+                pr.host = this.tokens.consume().stripQuotes();
+            }
             else
             {
                 auto badToken = this.tokens.consume();
                 pr.errors ~= TokenAndError(badToken,
-                        "expected from, where, or field names in select statement");
+                        "expected from, where, on, or field names in select statement");
             }
         }
     }
@@ -402,7 +410,7 @@ unittest
     auto e = p.parse();
     assert(e.errors.length == 1);
     assert(e.errors[0] == TokenAndError(Token(TokenType.SELECT, 7, "select"),
-            "expected from, where, or field names in select statement"));
+            "expected from, where, on, or field names in select statement"));
 }
 
 unittest
