@@ -53,10 +53,10 @@ private bool writeOrder(bool shouldLeadingComma, string[] fields, Order[] direct
         buf.write(" ,");
     }
 
-    buf.write(`"order" : [ `);
+    buf.write(`"sort" : [ `);
     for (int i = 0; i < fields.length; i++)
     {
-        buf.write(format(`{ "%s" : %s }`, fields[i], orderToJSON(directions[i])));
+        buf.write(format(`{ "%s" : { "order" : %s } }`, fields[i], orderToJSON(directions[i])));
         if (i + 1 < fields.length)
         {
             buf.write(" , ");
