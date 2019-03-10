@@ -112,12 +112,14 @@ class Parser
     {
         auto didSeeWhere = false;
 
+        parseFieldList(pr, e);
+
         while (!this.tokens.isEOF())
         {
-            if (peekNIsType(0, TokenType.STRING))
+            if (peekNIsType(0, TokenType.STAR))
             {
-                auto t = this.tokens.consume();
-                e.fieldNames ~= t.stripQuotes();
+                this.tokens.consume();
+                e.fieldNames = [];
             }
             else if (peekNIsType(0, TokenType.FROM))
             {
@@ -196,6 +198,39 @@ class Parser
                 auto badToken = this.tokens.consume();
                 pr.errors ~= TokenAndError(badToken,
                         "expected from, where, or field names in select statement");
+            }
+        }
+    }
+
+    void parseFieldList(ParseResult* pr, ESelect* e)
+    {
+        if (peekNIsType(0, TokenType.STAR))
+        {
+            this.tokens.consume();
+            e.fieldNames = [];
+            return;
+        }
+
+        while (!this.tokens.isEOF())
+        {
+            if (!peekNIsType(0, TokenType.STRING))
+            {
+                return;
+            }
+
+            auto t = this.tokens.consume();
+            e.fieldNames ~= t.stripQuotes();
+
+            if (peekNIsType(0, TokenType.COMMA))
+            {
+                this.tokens.consume();
+                continue;
+            }
+
+            if (peekNIsType(0, TokenType.STRING))
+            {
+                pr.errors ~= TokenAndError(t, "missing a comma following field name");
+                continue;
             }
         }
     }
