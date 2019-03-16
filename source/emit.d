@@ -42,8 +42,19 @@ string emitResult(Target t, ParseResult input)
     case Type.ALTER_INDEX:
         import std.stdio;
 
-        writefln("ALTER_INDEX unsupported in emit");
-        assert(0);
+        auto alter = input.expr.alter;
+        buf.write(format(`curl -XPUT '%s/%s/_settings?pretty=true' -H "Content-Type: application/json" -d `,
+                getHost(input), alter.index));
+        buf.write("'{ ");
+        for (int i = 0; i < alter.keys.length; i++)
+        {
+            if (i != 0)
+            {
+                buf.write(", ");
+            }
+            buf.write(format(`"%s" : %s `, alter.keys[i], numOrStringAsJson(alter.values[i])));
+        }
+        buf.write("}'");
     }
     return buf.toString();
 }
@@ -124,17 +135,7 @@ private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
 {
     buf.write(`{ "term": { `);
     buf.write(format(`"%s" : `, simple.field));
-    switch (simple.test.typ)
-    {
-    case TokenType.NUMERIC:
-        buf.write(simple.test.text);
-        break;
-    case TokenType.STRING:
-        buf.write(format(`"%s"`, simple.test.stripQuotes()));
-        break;
-    default:
-        assert(0);
-    }
+    buf.write(numOrStringAsJson(simple.test));
     buf.write(` }`); // close term
     buf.write(` }`); // close object
 }
@@ -189,6 +190,20 @@ private bool writeSize(ESelect select, OutBuffer buf)
         return `"asc"`;
     case Order.Desc:
         return `"desc"`;
+    }
+}
+
+private string numOrStringAsJson(Token t)
+{
+
+    switch (t.typ)
+    {
+    case TokenType.NUMERIC:
+        return t.text;
+    case TokenType.STRING:
+        return format(`"%s"`, t.stripQuotes());
+    default:
+        assert(0);
     }
 }
 
