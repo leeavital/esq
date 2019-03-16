@@ -7,7 +7,9 @@ esq: $(SRC)
 test: integration_test unit_test
 
 .PHONY: unit_test
-unit_test:
+unit_test: esq-test-library
+
+esq-test-library: $(SRC)
 	dub test
 
 .PHONY: integration_test
@@ -25,3 +27,10 @@ check_format:
 .PHONY: install
 install: esq
 	install esq /usr/local/bin
+
+clean:
+	rm -f esq
+	rm -f esq-test-library
+	find test_suite \( -name actual.err -or -name actual.out  \) -delete
+	find test_suite  -type d -empty -delete
+

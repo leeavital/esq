@@ -1,0 +1,1 @@
+curl -XPUT 'http://localhost:9200/foo/_settings?pretty=true' -H "Content-Type: application/json" -d '{ "e" : 100 , "r.foo" : "value" }'
