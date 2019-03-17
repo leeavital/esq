@@ -16,6 +16,7 @@ enum TokenType
     ON,
     OPAND,
     OPEQ,
+    OPNEQ,
     OPOR,
     ORDER,
     RPAREN,
@@ -74,6 +75,7 @@ static this()
     literalTokens["*"] = TokenType.STAR;
     literalTokens[","] = TokenType.COMMA;
     literalTokens["="] = TokenType.OPEQ;
+    literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["alter"] = TokenType.ALTER;
     literalTokens["and"] = TokenType.OPAND;
     literalTokens["asc"] = TokenType.ASC;
@@ -461,5 +463,6 @@ unittest
     check(`foo=`, [`foo`, `=`]);
     check(`foo`, [`foo`]);
     check(`orby`, [`orby`]);
+    check(`WHERE x != foo`, [`WHERE`, `x`,`!=`, `foo`]);
     finish();
 }
