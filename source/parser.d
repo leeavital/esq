@@ -39,7 +39,8 @@ struct EAlter
 
 enum ComparisonOp
 {
-    Equal
+    Equal,
+    NotEqual
 }
 
 enum Order
@@ -344,7 +345,7 @@ class Parser
         if (peekNIsType(0, TokenType.STRING))
         {
             auto sym = this.tokens.consume();
-            if (peekNIsType(0, TokenType.OPEQ))
+            if (peekNIsType(0, TokenType.OPEQ) || peekNIsType(0, TokenType.OPNEQ))
             {
                 auto op = this.tokens.consume();
                 if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING))
@@ -504,6 +505,8 @@ class Parser
         {
         case TokenType.OPEQ:
             return ComparisonOp.Equal;
+        case TokenType.OPNEQ:
+            return ComparisonOp.NotEqual;
         default:
             assert(0);
         }
