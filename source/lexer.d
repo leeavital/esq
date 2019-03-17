@@ -202,11 +202,40 @@ class TokenStream
 
     @nogc bool peekLiteralToken(Token* tok)
     {
+        import std.ascii;
+
+        enum CharacterClass
+        {
+            num,
+            alph,
+            none,
+            white,
+            punct
+        }
+
+        CharacterClass getCharacterClass(ulong i)
+        {
+            if (i >= this.source.length)
+                return CharacterClass.none;
+            else if (isDigit(this.source[i]))
+                return CharacterClass.num;
+            else if (isWhite(this.source[i]))
+                return CharacterClass.white;
+            else if (isPunctuation(this.source[i]))
+                return CharacterClass.punct;
+            return CharacterClass.alph;
+        }
+
         // we need to take the longest matching literal (e.g. take ORDER over OR)
         ulong longestMatch = 0;
         foreach (const str, typ; literalTokens)
         {
-            if (this.peekChars(str) && str.length > longestMatch)
+            bool doesCharMatch = this.peekChars(str);
+            ulong wouldBeNextCharI = this.peekPos + str.length;
+            bool doesStrContinue = getCharacterClass(wouldBeNextCharI) == getCharacterClass(
+                    wouldBeNextCharI - 1);
+            if (doesCharMatch && str.length > longestMatch && (!doesStrContinue
+                    || getCharacterClass(wouldBeNextCharI - 1) == CharacterClass.punct))
             {
                 longestMatch = str.length;
                 tok.typ = typ;
@@ -368,7 +397,8 @@ unittest
         auto t = new TokenStream(full);
         string[] actual = [];
         Token[] tokens;
-        while (!t.isEOF())
+        auto limit = 0;
+        while (!t.isEOF() && ++limit < 100)
         {
             auto token = t.consume();
             actual = actual ~ [token.text];
@@ -430,5 +460,6 @@ unittest
     check(`SELECT WHERE foo = 2`, [`SELECT`, `WHERE`, `foo`, `=`, `2`]);
     check(`foo=`, [`foo`, `=`]);
     check(`foo`, [`foo`]);
+    check(`orby`, [`orby`]);
     finish();
 }
