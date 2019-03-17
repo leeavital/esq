@@ -133,11 +133,23 @@ private void writeWhere(bool shouldLeadingComma, OutBuffer buf, EWhere where)
 
 private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
 {
-    buf.write(`{ "term": { `);
-    buf.write(format(`"%s" : `, simple.field));
-    buf.write(numOrStringAsJson(simple.test));
-    buf.write(` }`); // close term
-    buf.write(` }`); // close object
+    final switch (simple.operator)
+    {
+      case ComparisonOp.Equal:
+        assert(simple.operator == ComparisonOp.Equal);
+        buf.write(`{ "term": { `);
+        buf.write(format(`"%s" : `, simple.field));
+        buf.write(numOrStringAsJson(simple.test));
+        buf.write(` }`); // close term
+        buf.write(` }`); // close object
+        break;
+      case ComparisonOp.NotEqual:
+        EWhereSimple copy = *simple;
+        copy.operator = ComparisonOp.Equal;
+        EWhereComplex negated = EWhereComplex(BoolOp.not, [ EWhere(&copy) ] );
+        writeWhere(false, buf, EWhere(&negated));
+        break;
+    }
 }
 
 private bool writeSourceFilter(bool shouldLeadingComma, string[] fields, OutBuffer buf)
