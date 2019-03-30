@@ -135,7 +135,7 @@ private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
 {
     final switch (simple.operator)
     {
-      case ComparisonOp.Equal:
+    case ComparisonOp.Equal:
         assert(simple.operator == ComparisonOp.Equal);
         buf.write(`{ "term": { `);
         buf.write(format(`"%s" : `, simple.field));
@@ -143,10 +143,10 @@ private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
         buf.write(` }`); // close term
         buf.write(` }`); // close object
         break;
-      case ComparisonOp.NotEqual:
+    case ComparisonOp.NotEqual:
         EWhereSimple copy = *simple;
         copy.operator = ComparisonOp.Equal;
-        EWhereComplex negated = EWhereComplex(BoolOp.not, [ EWhere(&copy) ] );
+        EWhereComplex negated = EWhereComplex(BoolOp.not, [EWhere(&copy)]);
         writeWhere(false, buf, EWhere(&negated));
         break;
     }

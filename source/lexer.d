@@ -463,6 +463,6 @@ unittest
     check(`foo=`, [`foo`, `=`]);
     check(`foo`, [`foo`]);
     check(`orby`, [`orby`]);
-    check(`WHERE x != foo`, [`WHERE`, `x`,`!=`, `foo`]);
+    check(`WHERE x != foo`, [`WHERE`, `x`, `!=`, `foo`]);
     finish();
 }
