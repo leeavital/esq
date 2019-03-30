@@ -2,7 +2,9 @@
 
 make format
 
-out=$(git status --porcelain -u no)
+out=$(git status --porcelain=v1 --untracked=no)
+
+echo "out = $out"
 
 if [[ "$out" != "" ]]
 then
