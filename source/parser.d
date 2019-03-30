@@ -136,12 +136,7 @@ class Parser
 
         while (!this.tokens.isEOF())
         {
-            if (peekNIsType(0, TokenType.STAR))
-            {
-                this.tokens.consume();
-                e.fieldNames = [];
-            }
-            else if (peekNIsType(0, TokenType.FROM))
+            if (peekNIsType(0, TokenType.FROM))
             {
                 if (peekNIsType(1, TokenType.STRING))
                 {
