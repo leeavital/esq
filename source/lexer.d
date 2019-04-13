@@ -84,7 +84,7 @@ static this()
     literalTokens["by"] = TokenType.BY;
     literalTokens["count"] = TokenType.COUNT;
     literalTokens["desc"] = TokenType.DESC;
-    literalTokens["distinct"] = TokenType.ALTER;
+    literalTokens["distinct"] = TokenType.DISTINCT;
     literalTokens["from"] = TokenType.FROM;
     literalTokens["index"] = TokenType.INDEX;
     literalTokens["limit"] = TokenType.LIMIT;

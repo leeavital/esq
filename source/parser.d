@@ -23,6 +23,7 @@ struct ESelect
     string from;
     uint lowerLimit;
     EWhere where;
+    Aggregation aggregation;
 
     // orderFields and orderDirections are the same length. Elements of order directions
     // will be either ASC or DESC
@@ -41,6 +42,13 @@ enum ComparisonOp
 {
     Equal,
     NotEqual
+}
+
+enum Aggregation
+{
+    None = 0,
+    Distinct = 1,
+    CountDistinct = 2
 }
 
 enum Order
@@ -231,6 +239,18 @@ class Parser
             this.tokens.consume();
             e.fieldNames = [];
             return;
+        }
+
+        if (peekNIsType(0, TokenType.COUNT) || peekNIsType(1, TokenType.DISTINCT))
+        {
+            this.tokens.consume();
+            this.tokens.consume();
+            e.aggregation = Aggregation.CountDistinct;
+        }
+        else if (peekNIsType(0, TokenType.DISTINCT))
+        {
+            this.tokens.consume();
+            e.aggregation = Aggregation.Distinct;
         }
 
         while (!this.tokens.isEOF())
