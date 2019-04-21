@@ -49,18 +49,18 @@ string emitResult(Target t, ParseResult input)
         JsonWriter wr;
         for (int i = 0; i < alter.keys.length; i++)
         {
-          auto value = alter.values[i];
-          switch (value.typ)
-          {
+            auto value = alter.values[i];
+            switch (value.typ)
+            {
             case TokenType.STRING:
-              wr.field(alter.keys[i], value.stripQuotes());
-              break;
+                wr.field(alter.keys[i], value.stripQuotes());
+                break;
             case TokenType.NUMERIC:
-              wr.literalField(alter.keys[i], value.text);
-              break;
+                wr.literalField(alter.keys[i], value.text);
+                break;
             default:
-              assert(0);
-          }
+                assert(0);
+            }
         }
         buf.write("'");
         buf.write(wr.toString());
@@ -172,7 +172,7 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
     return true;
 }
 
-@nogc private bool writeSize(JsonWriter *jwriter, ESelect select)
+@nogc private bool writeSize(JsonWriter* jwriter, ESelect select)
 {
     if (select.lowerLimit > 0)
     {
