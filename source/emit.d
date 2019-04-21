@@ -4,6 +4,7 @@ import lexer;
 import std.outbuffer;
 import std.conv;
 import std.format;
+import json;
 
 enum Target
 {
@@ -27,16 +28,15 @@ string emitResult(Target t, ParseResult input)
         if (hasBody)
         {
             buf.write(` -H "Content-Type: application/json" -d `);
-            buf.write(`'{ `); // start main request
-            bool shouldLeadingComma = writeSize(input.expr.select, buf);
-            shouldLeadingComma = writeSourceFilter(shouldLeadingComma,
-                    input.expr.select.fieldNames, buf) || shouldLeadingComma;
-            shouldLeadingComma = writeOrder(shouldLeadingComma,
-                    input.expr.select.orderFields, input.expr.select.orderDirections, buf)
-                || shouldLeadingComma;
-            shouldLeadingComma = writeQuery(shouldLeadingComma, input.expr.select, buf)
-                || shouldLeadingComma;
-            buf.write(" }'"); // close main request
+            JsonWriter wr;
+            writeSize(&wr, input.expr.select);
+            writeSourceFilter(&wr, input.expr.select.fieldNames);
+            writeOrder(&wr, input.expr.select.orderFields, input.expr.select.orderDirections);
+            writeQuery(&wr, input.expr.select);
+
+            buf.write("'");
+            buf.write(wr.toString());
+            buf.write("'");
         }
         break;
     case Type.ALTER_INDEX:
@@ -45,70 +45,66 @@ string emitResult(Target t, ParseResult input)
         auto alter = input.expr.alter;
         buf.write(format(`curl -XPUT '%s/%s/_settings?pretty=true' -H "Content-Type: application/json" -d `,
                 getHost(input), alter.index));
-        buf.write("'{ ");
+
+        JsonWriter wr;
         for (int i = 0; i < alter.keys.length; i++)
         {
-            if (i != 0)
+            auto value = alter.values[i];
+            switch (value.typ)
             {
-                buf.write(", ");
+            case TokenType.STRING:
+                wr.field(alter.keys[i], value.stripQuotes());
+                break;
+            case TokenType.NUMERIC:
+                wr.literalField(alter.keys[i], value.text);
+                break;
+            default:
+                assert(0);
             }
-            buf.write(format(`"%s" : %s `, alter.keys[i], numOrStringAsJson(alter.values[i])));
         }
-        buf.write("}'");
+        buf.write("'");
+        buf.write(wr.toString());
+        buf.write("'");
     }
     return buf.toString();
 }
 
-private bool writeOrder(bool shouldLeadingComma, string[] fields, Order[] directions, OutBuffer buf)
+@nogc private void writeOrder(JsonWriter* jwriter, string[] fields, Order[] directions)
 {
     if (fields.length == 0)
     {
-        return false; // TODO: we can actually return shouldLeadingComma here with some cleanup
+        return;
     }
 
-    if (shouldLeadingComma)
-    {
-        buf.write(" ,");
-    }
-
-    buf.write(`"sort" : [ `);
+    jwriter.startArray("sort");
     for (int i = 0; i < fields.length; i++)
     {
-        buf.write(format(`{ "%s" : { "order" : %s } }`, fields[i], orderToJSON(directions[i])));
-        if (i + 1 < fields.length)
-        {
-            buf.write(" , ");
-        }
+        auto name = fields[i];
+        auto direction = orderToJSON(directions[i]);
+
+        jwriter.startObject();
+        jwriter.startObject(name);
+        jwriter.field("order", direction);
+        jwriter.endObject();
+        jwriter.endObject();
     }
-    buf.write(" ]");
-    return true;
+    jwriter.endArray();
 }
 
-private bool writeQuery(bool leadingComma, ESelect select, OutBuffer buf)
+private void writeQuery(JsonWriter* jwriter, ESelect select)
 {
     if (!select.where.hasValue)
     {
-        return false;
+        return;
     }
 
-    if (leadingComma)
-    {
-        buf.write(" , ");
-    }
-
-    buf.write(`"query": `);
-    writeWhere(false, buf, select.where);
-
-    return true;
+    jwriter.startObject("query");
+    writeWhere(jwriter, select.where);
+    jwriter.endObject();
 }
 
-private void writeWhere(bool shouldLeadingComma, OutBuffer buf, EWhere where)
+private void writeWhere(JsonWriter* buf, EWhere where)
 {
-    if (shouldLeadingComma)
-    {
-        buf.write(" , ");
-    }
-
     if (where.peek!(EWhereSimple*))
     {
         auto simple = where.get!(EWhereSimple*);
@@ -117,72 +113,70 @@ private void writeWhere(bool shouldLeadingComma, OutBuffer buf, EWhere where)
     else // is complex
     {
         auto complex = where.get!(EWhereComplex*);
-        buf.write(`{ "bool" : { `);
-        buf.write(format(`"%s" : [ `, boolOpToESOp(complex.operator)));
-        auto leadingComma = false;
+        buf.startObject("bool");
+        buf.startArray(boolOpToESOp(complex.operator));
         foreach (EWhere c; complex.operands)
         {
-            writeWhere(leadingComma, buf, c);
-            leadingComma = true;
+            buf.startObject();
+            writeWhere(buf, c);
+            buf.endObject();
         }
-        buf.write(format(" ]")); // close operations
-        buf.write(" }"); // close bool
-        buf.write(" }"); // close object
+        buf.endArray();
+        buf.endObject();
     }
 }
 
-private void writeWhereSimple(OutBuffer buf, EWhereSimple* simple)
+private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
 {
     final switch (simple.operator)
     {
     case ComparisonOp.Equal:
         assert(simple.operator == ComparisonOp.Equal);
-        buf.write(`{ "term": { `);
-        buf.write(format(`"%s" : `, simple.field));
-        buf.write(numOrStringAsJson(simple.test));
-        buf.write(` }`); // close term
-        buf.write(` }`); // close object
+        jwriter.startObject("term");
+        switch (simple.test.typ)
+        {
+        case TokenType.STRING:
+            jwriter.field(simple.field, simple.test.stripQuotes());
+            break;
+        case TokenType.NUMERIC:
+            jwriter.literalField(simple.field, simple.test.text);
+            break;
+        default:
+            assert(0);
+        }
+        jwriter.endObject();
         break;
     case ComparisonOp.NotEqual:
         EWhereSimple copy = *simple;
         copy.operator = ComparisonOp.Equal;
         EWhereComplex negated = EWhereComplex(BoolOp.not, [EWhere(&copy)]);
-        writeWhere(false, buf, EWhere(&negated));
+        writeWhere(jwriter, EWhere(&negated));
         break;
     }
 }
 
-private bool writeSourceFilter(bool shouldLeadingComma, string[] fields, OutBuffer buf)
+@nogc private bool writeSourceFilter(JsonWriter* jwriter, string[] fields)
 {
     if (fields.length == 0)
     {
         return false;
     }
 
-    if (shouldLeadingComma)
-    {
-        buf.write(" , ");
-    }
-
-    buf.write(`"_source" : [ `);
+    jwriter.startArray("_source");
     for (int i = 0; i < fields.length; i++)
     {
         auto name = fields[i];
-        buf.write(format(`"%s"`, name));
-        if (i != fields.length - 1)
-        {
-            buf.write(" , ");
-        }
+        jwriter.value(name);
     }
-    buf.write(` ]`);
+    jwriter.endArray();
     return true;
 }
 
-private bool writeSize(ESelect select, OutBuffer buf)
+@nogc private bool writeSize(JsonWriter* jwriter, ESelect select)
 {
     if (select.lowerLimit > 0)
     {
-        buf.write(format(`"size": %d`, select.lowerLimit));
+        jwriter.field("size", select.lowerLimit);
         return true;
     }
     return false;
@@ -199,23 +193,9 @@ private bool writeSize(ESelect select, OutBuffer buf)
     final switch (order)
     {
     case Order.Asc:
-        return `"asc"`;
+        return `asc`;
     case Order.Desc:
-        return `"desc"`;
-    }
-}
-
-private string numOrStringAsJson(Token t)
-{
-
-    switch (t.typ)
-    {
-    case TokenType.NUMERIC:
-        return t.text;
-    case TokenType.STRING:
-        return format(`"%s"`, t.stripQuotes());
-    default:
-        assert(0);
+        return `desc`;
     }
 }
 
@@ -285,10 +265,10 @@ unittest
             Token(TokenType.NUMERIC, 200, "10"));
     e.select.where = &where;
     const s = emitResult(Target.curl, ParseResult(Type.SELECT, e, []));
-    auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size": 10 , "query": { "term": { "foo" : 10 } } }'`;
+    auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size" : 10 , "query" : { "term" : { "foo" : 10 } } }'`;
     if (s != expected)
     {
-        writefln("expected emit to be %s but was %s", expected, s);
+        writefln("expected emit to be:\n%s \nbut was:\n%s", expected, s);
         assert(0);
     }
 }
