@@ -8,7 +8,7 @@ export PATH=$PWD:$PATH
 popd > /dev/null
 
 pushd "$(dirname "$0")" > /dev/null
-dirs=$(find . -maxdepth 1 -type d -not -name '.')
+dirs=$(find . -maxdepth 1 -type d -not -name '.' | sort)
 
 set +e
 
