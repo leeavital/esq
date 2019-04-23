@@ -34,7 +34,8 @@ string emitResult(Target t, ParseResult input)
             writeSourceFilter(&wr, input.expr.select.aggregation, input.expr.select.fieldNames);
             writeOrder(&wr, input.expr.select.orderFields, input.expr.select.orderDirections);
             writeQuery(&wr, input.expr.select);
-            writeAggregations(&wr, input.expr.select.aggregation, input.expr.select.fieldNames);
+            writeAggregations(&wr, input.expr.select.aggregation,
+                    input.expr.select.fieldNames, input.expr.select.lowerLimit);
 
             buf.write("'");
             buf.write(wr.toString());
@@ -105,30 +106,45 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
     jwriter.endObject();
 }
 
-@nogc private void writeAggregations(JsonWriter* jwriter, Aggregation agg, string[] fieldNames)
+@nogc private void writeAggregations(JsonWriter* jwriter, Aggregation agg,
+        string[] fieldNames, int limit)
 {
+
+    if (agg == Aggregation.None)
+    {
+        return;
+    }
+
+    string aggName;
     final switch (agg)
     {
     case Aggregation.None:
-        return;
+        assert(0);
     case Aggregation.Distinct:
-        jwriter.startObject("aggs");
-        jwriter.startObject(fieldNames[0]); // name of the aggregation
-        jwriter.startObject("terms");
-        jwriter.field("field", fieldNames[0]);
-        jwriter.endObject();
-        jwriter.endObject();
-        jwriter.endObject();
-        return;
+        aggName = "terms";
+        break;
     case Aggregation.CountDistinct:
+        aggName = "cardinality";
+        break;
+    }
+
+    foreach (const fn; fieldNames)
+    {
         jwriter.startObject("aggs");
-        jwriter.startObject(fieldNames[0]); // name of the aggregation
-        jwriter.startObject("cardinality");
-        jwriter.field("field", fieldNames[0]);
+        jwriter.startObject(fn); // agg label
+        jwriter.startObject(aggName); // aggType
+        jwriter.field("field", fn);
+        if (limit > 0)
+        {
+            jwriter.field("size", limit);
+        }
+        jwriter.endObject();
+    }
+
+    foreach (const fn; fieldNames)
+    {
         jwriter.endObject();
         jwriter.endObject();
-        jwriter.endObject();
-        return;
     }
 }
 
@@ -179,11 +195,11 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
         EWhereSimple copy = *simple;
         copy.operator = ComparisonOp.Equal;
         EWhereComplex negated = EWhereComplex(BoolOp.not, [EWhere(&copy)]);
-        writeWhere(jwriter, EWhere( & negated));
+        writeWhere(jwriter, EWhere(&negated));
     }
 }
 
-@nogc private bool writeSourceFilter(JsonWriter * jwriter, Aggregation agg, string[] fields)
+@nogc private bool writeSourceFilter(JsonWriter* jwriter, Aggregation agg, string[] fields)
 {
     if (fields.length == 0 || agg != Aggregation.None)
     {
