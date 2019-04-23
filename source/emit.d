@@ -113,7 +113,7 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
         return;
     case Aggregation.Distinct:
         jwriter.startObject("aggs");
-        jwriter.startObject("distinct"); // name of the aggregation
+        jwriter.startObject(fieldNames[0]); // name of the aggregation
         jwriter.startObject("terms");
         jwriter.field("field", fieldNames[0]);
         jwriter.endObject();
@@ -122,7 +122,7 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
         return;
     case Aggregation.CountDistinct:
         jwriter.startObject("aggs");
-        jwriter.startObject("distinct"); // name of the aggregation
+        jwriter.startObject(fieldNames[0]); // name of the aggregation
         jwriter.startObject("cardinality");
         jwriter.field("field", fieldNames[0]);
         jwriter.endObject();
