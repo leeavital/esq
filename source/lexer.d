@@ -6,6 +6,7 @@ enum TokenType
     ASC,
     BY,
     COMMA,
+    COUNT,
     DESC,
     FROM,
     HOST,
@@ -14,6 +15,7 @@ enum TokenType
     LPAREN,
     NUMERIC,
     ON,
+    DISTINCT,
     OPAND,
     OPEQ,
     OPNEQ,
@@ -72,15 +74,17 @@ static this()
 {
     literalTokens["("] = TokenType.LPAREN;
     literalTokens[")"] = TokenType.RPAREN;
+    literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["*"] = TokenType.STAR;
     literalTokens[","] = TokenType.COMMA;
     literalTokens["="] = TokenType.OPEQ;
-    literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["alter"] = TokenType.ALTER;
     literalTokens["and"] = TokenType.OPAND;
     literalTokens["asc"] = TokenType.ASC;
     literalTokens["by"] = TokenType.BY;
+    literalTokens["count"] = TokenType.COUNT;
     literalTokens["desc"] = TokenType.DESC;
+    literalTokens["distinct"] = TokenType.DISTINCT;
     literalTokens["from"] = TokenType.FROM;
     literalTokens["index"] = TokenType.INDEX;
     literalTokens["limit"] = TokenType.LIMIT;
@@ -464,5 +468,6 @@ unittest
     check(`foo`, [`foo`]);
     check(`orby`, [`orby`]);
     check(`WHERE x != foo`, [`WHERE`, `x`, `!=`, `foo`]);
+    check(`DISTINCT`, ["DISTINCT"]);
     finish();
 }

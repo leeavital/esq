@@ -28,11 +28,14 @@ string emitResult(Target t, ParseResult input)
         if (hasBody)
         {
             buf.write(` -H "Content-Type: application/json" -d `);
+
             JsonWriter wr;
             writeSize(&wr, input.expr.select);
-            writeSourceFilter(&wr, input.expr.select.fieldNames);
+            writeSourceFilter(&wr, input.expr.select.aggregation, input.expr.select.fieldNames);
             writeOrder(&wr, input.expr.select.orderFields, input.expr.select.orderDirections);
             writeQuery(&wr, input.expr.select);
+            writeAggregations(&wr, input.expr.select.aggregation,
+                    input.expr.select.fieldNames, input.expr.select.lowerLimit);
 
             buf.write("'");
             buf.write(wr.toString());
@@ -103,6 +106,48 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
     jwriter.endObject();
 }
 
+@nogc private void writeAggregations(JsonWriter* jwriter, Aggregation agg,
+        string[] fieldNames, int limit)
+{
+
+    if (agg == Aggregation.None)
+    {
+        return;
+    }
+
+    string aggName;
+    final switch (agg)
+    {
+    case Aggregation.None:
+        assert(0);
+    case Aggregation.Distinct:
+        aggName = "terms";
+        break;
+    case Aggregation.CountDistinct:
+        aggName = "cardinality";
+        break;
+    }
+
+    foreach (const fn; fieldNames)
+    {
+        jwriter.startObject("aggs");
+        jwriter.startObject(fn); // agg label
+        jwriter.startObject(aggName); // aggType
+        jwriter.field("field", fn);
+        if (limit > 0)
+        {
+            jwriter.field("size", limit);
+        }
+        jwriter.endObject();
+    }
+
+    foreach (const fn; fieldNames)
+    {
+        jwriter.endObject();
+        jwriter.endObject();
+    }
+}
+
 private void writeWhere(JsonWriter* buf, EWhere where)
 {
     if (where.peek!(EWhereSimple*))
@@ -151,13 +196,12 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
         copy.operator = ComparisonOp.Equal;
         EWhereComplex negated = EWhereComplex(BoolOp.not, [EWhere(&copy)]);
         writeWhere(jwriter, EWhere(&negated));
-        break;
     }
 }
 
-@nogc private bool writeSourceFilter(JsonWriter* jwriter, string[] fields)
+@nogc private bool writeSourceFilter(JsonWriter* jwriter, Aggregation agg, string[] fields)
 {
-    if (fields.length == 0)
+    if (fields.length == 0 || agg != Aggregation.None)
     {
         return false;
     }
@@ -185,7 +229,7 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
     return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length > 0
-        || e.fieldNames.length > 0;
+        || e.fieldNames.length > 0 || e.aggregation != Aggregation.None;
 }
 
 @nogc private string orderToJSON(Order order)
