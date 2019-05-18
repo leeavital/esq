@@ -3,13 +3,14 @@
 set -eo pipefail
 
 function do_curl  {
-  curl --silent --output /dev/null "$@"
+  set -e
+  curl  "$@"
 }
 
 function index {
   json="$1"
 
-  do_curl http://localhost:9200/people/_doc -XPOST -H "Content-Type: application/json" -d "$json"
+  do_curl http://localhost:9200/people/person -XPOST -H "Content-Type: application/json" -d "$json"
   echo "indexed $json"
 }
 
@@ -37,7 +38,7 @@ json=$(cat <<EOD
 EOD
 )
 
-do_curl http://localhost:9200/people/_mapping/_doc -H "Content-Type: application/json" -d "$json"
+do_curl http://localhost:9200/people/_mapping/person -H "Content-Type: application/json" -d "$json"
 m=$(echo $json | jq -c .)
 echo "put field mappings: $m"
 
