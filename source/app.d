@@ -52,6 +52,8 @@ void usage()
     esq is meant to be installed on a local machine, and outputs curl commands which
     can be piped, or easily copied into a remote session.
 
+    github.com/leeavital/esq/
+
     For example:
 
       esq 'SELECT FROM "testindex" LIMIT 10

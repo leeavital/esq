@@ -23,21 +23,57 @@ The following is an inexhaustive list of what you might do with `esq` (\* denote
 
 - Check that documents do or do not exist for a certain query
 - Delete documents that match a certain search (\*)
-- Alter index settings (\*)
+- Alter index settings
 - See how many documents fall into buckets (e.g. count `users` by `country` field) (\*)
 
 Example Use
 ===========
 
 
-1. select all ids and usenames from a 'user' index where the region field is "US". Hits `localhost:9200` by default.
+1. select the usernames of people whose locale is not US and whose usernames are neither John nor Ringo
 
     ```
-    esq 'SELECT id, name FROM  users WHERE region = "US"'
+    esq 'SELECT username FROM people WHERE locale != "US" AND (username = "John" OR username = "Ringo") '
     ```
 
-1. select a list of user IDs ordered by username in descending order from a remote host.
+1. select a list of user IDs ordered by username in descending order from a remote host
 
     ```
     esq 'SELECT id FROM users WHERE region = 'US' ORDER BY username DESC'
     ```
+
+1. alter index settings
+
+    ```
+    esq 'ALTER INDEX "users" "index.refresh_interval" = "1s"'
+    ```
+
+1. bucket users by favorite color
+
+   ```
+   esq 'SELECT DISTINCT favoriteColor FROM people'
+   ```
+
+
+1. count the number of unique favorite colors in the people index
+
+  ```
+  esq 'SELECT COUNT DISTINCT favoriteColor FROM people'
+  ```
+
+1. select any 10 documents using a URL different than localhost:9200
+
+  ```
+  esq 'SELECT * FROM * LIMIT 10 ON HOST remote.elasticsearch.host:4040'
+  ```
+
+Build and Install
+==================
+
+Requirements:
+
+- A working D build environment (download from https://dlang.org/ or your systems package manager)
+- `make`
+
+Run `make esq` to build a binary
+Run `make install` to build and install
