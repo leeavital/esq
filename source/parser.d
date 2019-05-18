@@ -152,6 +152,12 @@ class Parser
                     auto idx = this.tokens.consume().stripQuotes(); // consume index name
                     e.from = idx;
                 }
+                else if (peekNIsType(1, TokenType.STAR))
+                {
+                    this.tokens.consume(); // consume SELECT
+                    this.tokens.consume(); // consume STAR
+                    e.from = "*";
+                }
                 else
                 {
                     pr.errors ~= TokenAndError(this.tokens.consume(),
