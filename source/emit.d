@@ -130,7 +130,7 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
 
     foreach (const fn; fieldNames)
     {
-        jwriter.startObject("aggs");
+        jwriter.startObject("aggregations");
         jwriter.startObject(fn); // agg label
         jwriter.startObject(aggName); // aggType
         jwriter.field("field", fn);
