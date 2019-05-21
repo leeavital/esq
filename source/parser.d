@@ -132,7 +132,10 @@ class Parser
         }
         else
         {
-            assert(0);
+            parseResult.errors ~= TokenAndError(this.tokens.consume(),
+                    "expected SELECT or ALTER INDEX at start of expression");
+            // don't bother parsing more
+            return parseResult;
         }
     }
 
