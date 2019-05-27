@@ -51,12 +51,12 @@ struct Token
 
     }
 
-    bool numericIsNegative()
+    @nogc bool numericIsNegative()
     {
         return this.text[0] == '-';
     }
 
-    bool numericIsDecimal()
+    @nogc bool numericIsDecimal()
     {
         foreach (const c; this.text)
         {
