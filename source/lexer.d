@@ -48,10 +48,10 @@ struct Token
             return this.text[1 .. this.text.length - 1];
         }
         return this.text;
-
     }
 
     @nogc bool numericIsNegative()
+    in(this.typ == TokenType.NUMERIC, "cannot call numericIsNegative on non-NUMERIC")
     {
         return this.text[0] == '-';
     }
@@ -66,6 +66,19 @@ struct Token
             }
         }
         return false;
+    }
+}
+
+// AutoFixes are automatic corrections to the character stream
+// that the lexer can make to get past the lexing phase.
+struct AutoFix
+{
+    string message;
+    ulong pos;
+
+    @nogc bool empty()
+    {
+        return this.message == "" && this.pos == 0;
     }
 }
 
@@ -108,6 +121,11 @@ class TokenStream
     // the current set of tokens that have already been parsed.
     // TODO: this should be a more efficient DS
     private Token[] peek;
+
+    // all AutoFixes for this lex.
+    // TODO: use a more efficient datastructure that caps the number
+    // of fixes
+    private AutoFix[] fixes;
 
     private string source;
 
@@ -164,6 +182,12 @@ class TokenStream
         return this.peek[n];
     }
 
+    public const(AutoFix[]) getAutoFixes()
+    {
+        const AutoFix[] f = this.fixes;
+        return f;
+    }
+
     // if possible, peek the next token
     private void peekOneMore()
     {
@@ -181,10 +205,11 @@ class TokenStream
         }
 
         Token nextToken = Token();
+        AutoFix fix;
 
         if (peekLiteralToken(&nextToken))
         { /* do nothing  */ }
-        else if (peekQuotedString(&nextToken))
+        else if (peekQuotedString(&nextToken, &fix))
         { /* do nothing */ }
         else if (this.peekNumeric(&nextToken))
         { /* do nothing */ }
@@ -204,6 +229,12 @@ class TokenStream
 
         this.peekPos = nextToken.endPos();
         this.peek = this.peek ~ nextToken;
+
+        if (!fix.empty())
+        {
+            writefln("added to fixes");
+            this.fixes ~= fix;
+        }
     }
 
     @nogc bool peekLiteralToken(Token* tok)
@@ -252,7 +283,7 @@ class TokenStream
         return longestMatch > 0;
     }
 
-    @nogc private bool peekQuotedString(Token* tok)
+    @nogc private bool peekQuotedString(Token* tok, AutoFix* fix)
     {
         if (!(this.peekChars("\"") || this.peekChars("'")))
         {
@@ -265,6 +296,15 @@ class TokenStream
         while (this.source[n] != delim)
         {
             n++; // TODO: handle escaped strings
+            if (n == this.source.length)
+            {
+                // `source` ends in an unterminated string, we
+                // can recover by inserting one automatically
+                n--;
+                fix.pos = n;
+                fix.message = "unterminated string; inserting closing quote";
+                break;
+            }
         }
         n++; // account for the last delim
 
@@ -469,5 +509,6 @@ unittest
     check(`orby`, [`orby`]);
     check(`WHERE x != foo`, [`WHERE`, `x`, `!=`, `foo`]);
     check(`DISTINCT`, ["DISTINCT"]);
+    check(`"foo`, [`"foo`]);
     finish();
 }

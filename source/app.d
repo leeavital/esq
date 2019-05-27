@@ -4,6 +4,7 @@ import parser;
 import emit;
 import std.array;
 import std.format;
+import errors;
 
 int main(string[] args)
 {
@@ -24,15 +25,29 @@ int main(string[] args)
     }
 
     auto result = p.parse();
+    auto err = false;
+    auto fixes = t.getAutoFixes();
+
+    if (fixes.length > 0)
+    {
+
+        err = true;
+        foreach (const f; fixes)
+        {
+            formatError(stderr, q, f);
+        }
+    }
 
     if (result.errors.length > 0)
     {
-        import errors;
-
+        err = true;
         foreach (const e; result.errors)
         {
             formatError(stderr, q, e);
         }
+    }
+    if (err)
+    {
         return 1;
     }
 
@@ -76,5 +91,4 @@ void usage()
     `;
 
     write(outdent(u));
-
 }
