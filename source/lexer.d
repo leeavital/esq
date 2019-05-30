@@ -232,7 +232,6 @@ class TokenStream
 
         if (!fix.empty())
         {
-            writefln("added to fixes");
             this.fixes ~= fix;
         }
     }
@@ -302,7 +301,7 @@ class TokenStream
                 // can recover by inserting one automatically
                 n--;
                 fix.pos = n;
-                fix.message = "unterminated string; inserting closing quote";
+                fix.message = "unterminated string; assuming closing quote";
                 break;
             }
         }

@@ -1,0 +1,6 @@
+SELECT FROM bar LIMIT app WHERE x = "foo
+                                       ^
+unterminated string; assuming closing quote
+SELECT FROM bar LIMIT app WHERE x = "foo
+                      ^^^
+expected numeric after LIMIT
