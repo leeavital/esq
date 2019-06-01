@@ -1,0 +1,1 @@
+curl -XPOST http://localhost:9200/*/_search?pretty=true -H "Content-Type: application/json" -d '{ "query" : { "bool" : { "must" : [ { "range" : { "x" : { "lt" : 100 } } } , { "range" : { "y" : { "gt" : 200 } } } , { "range" : { "z" : { "lte" : 300 } } } , { "range" : { "a" : { "gte" : 400 } } } ] } } }'
