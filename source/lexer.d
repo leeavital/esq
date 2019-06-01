@@ -8,6 +8,7 @@ enum TokenType
     COMMA,
     COUNT,
     DESC,
+    DISTINCT,
     FROM,
     HOST,
     INDEX,
@@ -15,10 +16,13 @@ enum TokenType
     LPAREN,
     NUMERIC,
     ON,
-    DISTINCT,
     OPAND,
     OPEQ,
+    OPGT,
+    OPGTE,
     OPNEQ,
+    OPLT,
+    OPLTE,
     OPOR,
     ORDER,
     RPAREN,
@@ -77,7 +81,11 @@ static this()
     literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["*"] = TokenType.STAR;
     literalTokens[","] = TokenType.COMMA;
+    literalTokens["<"] = TokenType.OPLT;
+    literalTokens["<="] = TokenType.OPLTE;
     literalTokens["="] = TokenType.OPEQ;
+    literalTokens[">"] = TokenType.OPGT;
+    literalTokens[">="] = TokenType.OPGTE;
     literalTokens["alter"] = TokenType.ALTER;
     literalTokens["and"] = TokenType.OPAND;
     literalTokens["asc"] = TokenType.ASC;
