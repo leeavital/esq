@@ -41,7 +41,11 @@ struct EAlter
 enum ComparisonOp
 {
     Equal,
-    NotEqual
+    NotEqual,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
 }
 
 enum Aggregation
@@ -369,7 +373,8 @@ class Parser
         if (peekNIsType(0, TokenType.STRING))
         {
             auto sym = this.tokens.consume();
-            if (peekNIsType(0, TokenType.OPEQ) || peekNIsType(0, TokenType.OPNEQ))
+            if (peekNIsOnOf(0, TokenType.OPEQ, TokenType.OPNEQ, TokenType.OPLT,
+                    TokenType.OPLTE, TokenType.OPGT, TokenType.OPGTE))
             {
                 auto op = this.tokens.consume();
                 if (peekNIsOnOf(0, TokenType.NUMERIC, TokenType.STRING))
@@ -531,6 +536,14 @@ class Parser
             return ComparisonOp.Equal;
         case TokenType.OPNEQ:
             return ComparisonOp.NotEqual;
+        case TokenType.OPGT:
+            return ComparisonOp.Gt;
+        case TokenType.OPGTE:
+            return ComparisonOp.Gte;
+        case TokenType.OPLT:
+            return ComparisonOp.Lt;
+        case TokenType.OPLTE:
+            return ComparisonOp.Lte;
         default:
             assert(0);
         }

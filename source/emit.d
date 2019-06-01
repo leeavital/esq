@@ -171,26 +171,37 @@ private void writeWhere(JsonWriter* buf, EWhere where)
     }
 }
 
+immutable string[ComparisonOp] comparisonToName;
+static this()
+{
+    comparisonToName[ComparisonOp.Gte] = "gte";
+    comparisonToName[ComparisonOp.Lte] = "lte";
+    comparisonToName[ComparisonOp.Gt] = "gt";
+    comparisonToName[ComparisonOp.Lt] = "lt";
+}
+
 private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
 {
+
     final switch (simple.operator)
     {
     case ComparisonOp.Equal:
-        assert(simple.operator == ComparisonOp.Equal);
         jwriter.startObject("term");
-        switch (simple.test.typ)
-        {
-        case TokenType.STRING:
-            jwriter.field(simple.field, simple.test.stripQuotes());
-            break;
-        case TokenType.NUMERIC:
-            jwriter.literalField(simple.field, simple.test.text);
-            break;
-        default:
-            assert(0);
-        }
+        writerFieldExpr(jwriter, simple.field, simple.test);
         jwriter.endObject();
         break;
+    case ComparisonOp.Gt:
+    case ComparisonOp.Lt:
+    case ComparisonOp.Gte:
+    case ComparisonOp.Lte:
+        auto comparison = comparisonToName[simple.operator];
+        jwriter.startObject("range");
+        jwriter.startObject(simple.field);
+        writerFieldExpr(jwriter, comparison, simple.test);
+        jwriter.endObject(); // end field
+        jwriter.endObject(); // end range
+        break;
+
     case ComparisonOp.NotEqual:
         EWhereSimple copy = *simple;
         copy.operator = ComparisonOp.Equal;
@@ -224,6 +235,22 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
         return true;
     }
     return false;
+}
+
+@nogc private void writerFieldExpr(JsonWriter* jwriter, string fieldName, Token expr)
+{
+    switch (expr.typ)
+    {
+    case TokenType.STRING:
+        jwriter.field(fieldName, expr.stripQuotes());
+        break;
+    case TokenType.NUMERIC:
+        jwriter.literalField(fieldName, expr.text);
+        break;
+    default:
+        assert(0);
+    }
+
 }
 
 @nogc private bool shouldWriteQueryBody(ESelect e)
