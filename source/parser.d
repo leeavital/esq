@@ -372,7 +372,7 @@ class Parser
             if (peekNIsType(0, TokenType.OPEQ) || peekNIsType(0, TokenType.OPNEQ))
             {
                 auto op = this.tokens.consume();
-                if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING))
+                if (peekNIsOnOf(0, TokenType.NUMERIC, TokenType.STRING))
                 {
                     auto lhs = this.tokens.consume();
                     where.operator = parseOp(op);
@@ -539,6 +539,24 @@ class Parser
     bool peekNIsType(int n, TokenType t)
     {
         return this.tokens.canPeekN(n) && this.tokens.peekN(n).typ == t;
+    }
+
+    bool peekNIsOnOf(int n, TokenType[] ts...)
+    {
+        if (!this.tokens.canPeekN(n))
+        {
+            return false;
+        }
+
+        for (auto i = 0; i < ts.length; i++)
+        {
+            if (this.peekNIsType(n, ts[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
