@@ -11,7 +11,7 @@ function index {
   json="$1"
 
   do_curl http://localhost:9200/people/person -XPOST -H "Content-Type: application/json" -d "$json"
-  echo "indexed $json"
+  echo "indexed $json\n\n"
 }
 
 do_curl http://localhost:9200/people -XDELETE
@@ -32,6 +32,9 @@ json=$(cat <<EOD
     },
     "locale": {
       "type": "keyword"
+    },
+    "birthyear": {
+      "type": "number"
     }
   }
 }
@@ -42,7 +45,7 @@ do_curl http://localhost:9200/people/_mapping/person -H "Content-Type: applicati
 m=$(echo $json | jq -c .)
 echo "put field mappings: $m"
 
-index '{ "type": "person", "favoriteColor": "red", "username": "John", "locale": "UK" }'
-index '{ "type": "person", "favoriteColor": "blue", "username": "Paul", "locale": "UK" }'
-index '{ "type": "person", "favoriteColor": "orange", "username": "George", "locale": "UK" }'
-index '{ "type": "person", "favoriteColor": "red", "username": "Ringo", "locale": "UK" }'
+index '{ "type": "person", "favoriteColor": "red", "username": "John", "locale": "UK", "birthyear":  1940 }'
+index '{ "type": "person", "favoriteColor": "blue", "username": "Paul", "locale": "UK", "birthyear": 1942 }'
+index '{ "type": "person", "favoriteColor": "orange", "username": "George", "locale": "UK", "birthyear": 1943 }'
+index '{ "type": "person", "favoriteColor": "red", "username": "Ringo", "locale": "UK", "birthyear": 1940 }'

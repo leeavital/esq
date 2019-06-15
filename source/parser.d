@@ -41,7 +41,11 @@ struct EAlter
 enum ComparisonOp
 {
     Equal,
-    NotEqual
+    NotEqual,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
 }
 
 enum Aggregation
@@ -369,10 +373,11 @@ class Parser
         if (peekNIsType(0, TokenType.STRING))
         {
             auto sym = this.tokens.consume();
-            if (peekNIsType(0, TokenType.OPEQ) || peekNIsType(0, TokenType.OPNEQ))
+            if (peekNIsOnOf(0, TokenType.OPEQ, TokenType.OPNEQ, TokenType.OPLT,
+                    TokenType.OPLTE, TokenType.OPGT, TokenType.OPGTE))
             {
                 auto op = this.tokens.consume();
-                if (peekNIsType(0, TokenType.NUMERIC) || peekNIsType(0, TokenType.STRING))
+                if (peekNIsOnOf(0, TokenType.NUMERIC, TokenType.STRING))
                 {
                     auto lhs = this.tokens.consume();
                     where.operator = parseOp(op);
@@ -531,6 +536,14 @@ class Parser
             return ComparisonOp.Equal;
         case TokenType.OPNEQ:
             return ComparisonOp.NotEqual;
+        case TokenType.OPGT:
+            return ComparisonOp.Gt;
+        case TokenType.OPGTE:
+            return ComparisonOp.Gte;
+        case TokenType.OPLT:
+            return ComparisonOp.Lt;
+        case TokenType.OPLTE:
+            return ComparisonOp.Lte;
         default:
             assert(0);
         }
@@ -539,6 +552,24 @@ class Parser
     bool peekNIsType(int n, TokenType t)
     {
         return this.tokens.canPeekN(n) && this.tokens.peekN(n).typ == t;
+    }
+
+    bool peekNIsOnOf(int n, TokenType[] ts...)
+    {
+        if (!this.tokens.canPeekN(n))
+        {
+            return false;
+        }
+
+        for (auto i = 0; i < ts.length; i++)
+        {
+            if (this.peekNIsType(n, ts[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
