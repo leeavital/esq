@@ -1,0 +1,102 @@
+.TH "ESQ" "1" "July 2019" "" ""
+
+.SH "NAME
+\fBesq\R \- Elasticsearch Query Tool
+.
+
+.SH "SYNOPSIS"
+\fBesq\fR \fIquery\fR
+.
+.P
+\fBesq\fR tranforms SQL-like queries into curl commands
+suitable for elasticsearch. Supporting simple filters and
+aggregations. For example, \fB esq 'SELECT DISTINCT "price"
+FROM "cars" ON HOST "my-host:9200"'\fR will output a query to
+select the distinct prices from all documents on an index
+named "cars" on an elastisearch host at  "my-host:9200". The
+query language is documented in the \fIQUERY LANGUAGE\fR
+section.
+.
+.P
+Since \fBesq\fR outputs curl invocations, any \fBesq\fR can be
+piped or copied into a remote or local shell where curl is
+installed. Idiomatic uses are documented in the \fICONNECTING
+TO ELASTICSEARCH\fR section. Any \fBesq\fR can be executed immediately by piping to \fBsh\fR.
+For example, \fB esq 'SELECT FROM cars WHERE price < 10000' | sh\fR.
+.
+.SH "QUERY LANGUAGE"
+.
+.SS "SELECT"
+.P
+The simplest query \fBesq\fR does is selection without any parameters. 
+.
+.IP "" 4
+.nf
+esq 'SELECT'
+=> selects some twenty items from any index, using localhost:9200 as the URL.
+.fi
+.
+.IP "" 0
+.
+.SS "FROM"
+.
+.P
+Selections can be narrowed down to an index by adding \fBFROM\fR \fIindex\fR to the query. Wildcards can be used to
+select multiple indexes.
+.IP "" 4
+.nf
+esq 'SELECT FROM cars'
+=> selects twenty items from the "cars" index.
+esq 'SELECT FROM "c*"'
+=> selects twenty items from any index starting with c.
+=> Note that index names with non alpha-numeric characters must be quoted.
+esq 'SELECT price FROM cars'
+=> selects just the price field for documents in the cars index.
+.fi
+.
+.SS "LIMIT"
+\fBLIMIT\fR can be used to control the number of items returned by a query.
+.IP "" 4
+.nf
+esq 'SELECT FROM cars LIMIT 100'
+=> select 100 items from cars
+.fi
+.IP "" 0
+.
+.SS "WHERE ..."
+.P
+\fBWHERE\fR can be used to narrow down queries. Simple comparison operators are
+supported. Boolean operators and parenthesis can be used to chain filters operations.
+.
+.IP "" 4
+.nf
+esq 'SELECT FROM cars WHERE (price < 5000 OR price > 50000) AND "make" != "Toyota" AND year = 2015'
+=> filters cars down by price and make. Note that field names may or may not be quoted.
+.fi
+.IP "" 0
+.SS "AGGREGATIONS"
+.P
+
+.IP "" 4
+.nf
+esq 'SELECT DISTINCT make, year FROM cars WHERE year < 2015'
+=> get unique make/year combinations for all cars where year is less than < 2015
+esq 'SELECT DISTINCT make, year FROM cars WHERE year < 2015'
+=> the same query, but count the buckets instead of returning them
+.fi
+.IP "" 0
+.SH "CONNECTING TO ELASTICSEARCH"
+Outputting curl commands allows \fBesq\fR to connect to elasticsearch in a variety of ways.
+.
+.SS "connecting to a locally running elasticsearch"
+.
+If elasticsearch is running locally, pipe the output of \fBesq\fR into \fBsh\fR
+.
+.SS "connecting over SSH"
+If the host running elasticsearch is accessible over SSH, theoutput of \fBesq\fR can be piped directly
+the \fBssh\fR command. Alternatively, using ssh
+port-forwarding and the method from "connecting to a locally running elasticsearch" works.
+.
+.
+.SH "AUTHOR"
+Lee Avital \fBleeavital@gmail.com\fR.

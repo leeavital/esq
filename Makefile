@@ -27,6 +27,8 @@ check_format:
 .PHONY: install
 install: esq
 	install esq /usr/local/bin
+	gzip man/esq.1 -c > /usr/local/share/man/man1/esq.1.gz
+	mandb
 
 clean:
 	rm -f esq
