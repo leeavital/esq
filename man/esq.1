@@ -85,6 +85,16 @@ esq 'SELECT DISTINCT make, year FROM cars WHERE year < 2015'
 => the same query, but count the buckets instead of returning them
 .fi
 .IP "" 0
+
+.SS "EXISTS"
+.P
+.IP "" 4
+.nf
+esq 'SELECT id FROM cars WHERE EXISTS(battery_life)'
+=> get ids for cars that have a battery_life field.
+.fi
+.IP "" 0
+
 .SH "CONNECTING TO ELASTICSEARCH"
 Outputting curl commands allows \fBesq\fR to connect to elasticsearch in a variety of ways.
 .
