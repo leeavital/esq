@@ -348,8 +348,11 @@ class Parser
 
     Expr parseWhere_3(ParseResult* pr)
     {
-        // TODO: only parsing one level, support arbitrary boolean expressions
-        if (peekNIsType(0, TokenType.STRING))
+        if (peekNIsType(0, TokenType.STRING) && peekNIsType(1, TokenType.LPAREN))
+        {
+            return parseFunction(pr);
+        }
+        else if (peekNIsType(0, TokenType.STRING))
         {
             auto sym = this.tokens.consume();
             if (peekNIsOnOf(0, TokenType.OPEQ, TokenType.OPNEQ, TokenType.OPLT,
@@ -394,6 +397,69 @@ class Parser
             }
         }
         return Expr();
+    }
+
+    Expr parseFunction(ParseResult* pr)
+    {
+        auto fname = this.tokens.consume();
+        auto ltoken = this.tokens.consume(); // lparen
+        Expr[] args;
+        while (true)
+        {
+            // parse the arg
+            Token argToken;
+            if (peekNIsType(0, TokenType.STRING))
+            {
+                argToken = this.tokens.consume();
+                args ~= stringExpr(argToken.stripQuotes());
+            }
+            else if (peekNIsType(0, TokenType.NUMERIC))
+            {
+                args ~= numExpr(this.tokens.consume().text);
+            }
+            else if (this.tokens.isEOF())
+            {
+                pr.errors ~= TokenAndError(ltoken, "unexpected EOF");
+                break;
+            }
+            else
+            {
+                pr.errors ~= TokenAndError(this.tokens.consume(),
+                        "expected string on number as function argument");
+            }
+
+            if (peekNIsType(0, TokenType.RPAREN))
+            {
+                this.tokens.consume();
+                break;
+            }
+            else if (peekNIsType(0, TokenType.COMMA))
+            {
+                this.tokens.consume();
+            }
+            else
+            {
+                // if we found a string/num followed by string/num, we probably
+                // are just missing a comma
+                if (peekNIsOnOf(0, TokenType.STRING, TokenType.NUMERIC))
+                {
+                    pr.errors ~= TokenAndError(this.tokens.peekN(0),
+                            "expected comma or rparen, inserting comma between function arguments");
+                }
+                else if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(argToken, "unexpected EOF after arg");
+                    break;
+                }
+                else
+                {
+                    pr.errors ~= TokenAndError(this.tokens.consume(),
+                            "expected comma or rparen after arg");
+                }
+            }
+        }
+
+        return fcallExpr(fname.text, args);
     }
 
     void parseOrderBy(ParseResult* pr, out string[] fields, out Order[] directions)
