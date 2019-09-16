@@ -1,10 +1,11 @@
-import parser;
+import expr_ast;
+import json;
 import lexer;
+import parser;
 
-import std.outbuffer;
 import std.conv;
 import std.format;
-import json;
+import std.outbuffer;
 
 enum Target
 {
@@ -96,7 +97,7 @@ string emitResult(Target t, ParseResult input)
 
 private void writeQuery(JsonWriter* jwriter, ESelect select)
 {
-    if (!select.where.hasValue)
+    if (select.where == Expr())
     {
         return;
     }
@@ -148,26 +149,82 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
     }
 }
 
-private void writeWhere(JsonWriter* buf, EWhere where)
+private void writeWhere(JsonWriter* buf, Expr expr)
 {
-    if (where.peek!(EWhereSimple*))
+    final switch (expr.t)
     {
-        auto simple = where.get!(EWhereSimple*);
-        writeWhereSimple(buf, simple);
-    }
-    else // is complex
-    {
-        auto complex = where.get!(EWhereComplex*);
+    case ExprType.Binary:
+        auto lhs = expr.binary.left;
+        auto rhs = expr.binary.right;
+        auto op = expr.binary.operator;
+
+        assert(lhs.t == ExprType.String);
+        auto fieldName = lhs.str.value;
+
+        final switch (op)
+        {
+        case ComparisonOp.Equal:
+            buf.startObject("term");
+            writeFieldExpr(buf, fieldName, rhs);
+            buf.endObject(); // end term
+            return;
+        case ComparisonOp.Lt:
+            goto case;
+        case ComparisonOp.Lte:
+            goto case;
+        case ComparisonOp.Gt:
+            goto case;
+        case ComparisonOp.Gte:
+            auto comparison = comparisonToName[op];
+            buf.startObject("range");
+            buf.startObject(fieldName);
+            writeFieldExpr(buf, comparison, rhs);
+            buf.endObject(); // end field
+            buf.endObject(); // end range
+            return;
+        case ComparisonOp.NotEqual:
+            auto negated = binaryExpr(*lhs, ComparisonOp.Equal, *rhs);
+            writeWhere(buf, boolExpr(BoolOp.not, [negated]));
+            return;
+        }
+
+    case ExprType.Boolean:
+        auto boolExp = expr.boolE;
         buf.startObject("bool");
-        buf.startArray(boolOpToESOp(complex.operator));
-        foreach (EWhere c; complex.operands)
+        buf.startArray(boolOpToESOp(boolExp.op));
+
+        foreach (Expr e; boolExp.operands)
         {
             buf.startObject();
-            writeWhere(buf, c);
+            writeWhere(buf, e);
             buf.endObject();
         }
-        buf.endArray();
-        buf.endObject();
+        buf.endArray(); // end operator
+        buf.endObject(); // end bool object
+
+        return;
+    case ExprType.Function:
+        buf.field("not implemented", 0);
+        return;
+    case ExprType.Number:
+        assert(0);
+    case ExprType.String:
+        assert(0);
+    }
+}
+
+@nogc writeFieldExpr(JsonWriter* buf, string fieldName, const Expr* expr)
+{
+    final switch (expr.t)
+    {
+    case ExprType.String:
+        buf.field(fieldName, expr.str.value);
+        break;
+    case ExprType.Number:
+        buf.literalField(fieldName, expr.num.value);
+        break;
+    case ExprType.Binary, ExprType.Boolean, ExprType.Function:
+        assert(0);
     }
 }
 
@@ -178,36 +235,6 @@ static this()
     comparisonToName[ComparisonOp.Lte] = "lte";
     comparisonToName[ComparisonOp.Gt] = "gt";
     comparisonToName[ComparisonOp.Lt] = "lt";
-}
-
-private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
-{
-
-    final switch (simple.operator)
-    {
-    case ComparisonOp.Equal:
-        jwriter.startObject("term");
-        writerFieldExpr(jwriter, simple.field, simple.test);
-        jwriter.endObject();
-        break;
-    case ComparisonOp.Gt:
-    case ComparisonOp.Lt:
-    case ComparisonOp.Gte:
-    case ComparisonOp.Lte:
-        auto comparison = comparisonToName[simple.operator];
-        jwriter.startObject("range");
-        jwriter.startObject(simple.field);
-        writerFieldExpr(jwriter, comparison, simple.test);
-        jwriter.endObject(); // end field
-        jwriter.endObject(); // end range
-        break;
-
-    case ComparisonOp.NotEqual:
-        EWhereSimple copy = *simple;
-        copy.operator = ComparisonOp.Equal;
-        EWhereComplex negated = EWhereComplex(BoolOp.not, [EWhere(&copy)]);
-        writeWhere(jwriter, EWhere(&negated));
-    }
 }
 
 @nogc private bool writeSourceFilter(JsonWriter* jwriter, Aggregation agg, string[] fields)
@@ -237,25 +264,9 @@ private void writeWhereSimple(JsonWriter* jwriter, EWhereSimple* simple)
     return false;
 }
 
-@nogc private void writerFieldExpr(JsonWriter* jwriter, string fieldName, Token expr)
-{
-    switch (expr.typ)
-    {
-    case TokenType.STRING:
-        jwriter.field(fieldName, expr.stripQuotes());
-        break;
-    case TokenType.NUMERIC:
-        jwriter.literalField(fieldName, expr.text);
-        break;
-    default:
-        assert(0);
-    }
-
-}
-
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
-    return e.lowerLimit > 0 || e.where.hasValue || e.orderFields.length > 0
+    return e.lowerLimit > 0 || e.where != Expr() || e.orderFields.length > 0
         || e.fieldNames.length > 0 || e.aggregation != Aggregation.None;
 }
 
@@ -321,25 +332,6 @@ unittest
     if (errors.length > 0)
     {
         writefln("%s", errors);
-        assert(0);
-    }
-}
-
-unittest
-{
-    import std.stdio;
-
-    auto e = Expr();
-    e.select.from = "idx";
-    e.select.lowerLimit = 10;
-    EWhereSimple where = EWhereSimple(ComparisonOp.Equal, "foo",
-            Token(TokenType.NUMERIC, 200, "10"));
-    e.select.where = &where;
-    const s = emitResult(Target.curl, ParseResult(Type.SELECT, e, []));
-    auto expected = `curl -XPOST http://localhost:9200/idx/_search?pretty=true -H "Content-Type: application/json" -d '{ "size" : 10 , "query" : { "term" : { "foo" : 10 } } }'`;
-    if (s != expected)
-    {
-        writefln("expected emit to be:\n%s \nbut was:\n%s", expected, s);
         assert(0);
     }
 }

@@ -1,5 +1,6 @@
-import std.stdio;
+import expr_ast;
 import lexer;
+import std.stdio;
 import std.variant;
 
 enum Type
@@ -11,7 +12,7 @@ enum Type
 ///  expression types
 
 // Top level expression type
-union Expr
+union TExpr
 {
     ESelect select;
     EAlter alter;
@@ -22,7 +23,7 @@ struct ESelect
     string[] fieldNames;
     string from;
     uint lowerLimit;
-    EWhere where;
+    Expr where;
     Aggregation aggregation;
 
     // orderFields and orderDirections are the same length. Elements of order directions
@@ -38,16 +39,6 @@ struct EAlter
     Token[] values;
 }
 
-enum ComparisonOp
-{
-    Equal,
-    NotEqual,
-    Lt,
-    Lte,
-    Gt,
-    Gte,
-}
-
 enum Aggregation
 {
     None = 0,
@@ -59,13 +50,6 @@ enum Order
 {
     Asc,
     Desc
-}
-
-enum BoolOp
-{
-    and,
-    or,
-    not
 }
 
 alias EWhere = Algebraic!(EWhereSimple*, EWhereComplex*);
@@ -87,7 +71,7 @@ struct EWhereComplex
 struct ParseResult
 {
     Type typ;
-    Expr expr;
+    TExpr expr;
     TokenAndError[] errors;
     string host;
 }
@@ -121,7 +105,7 @@ class Parser
             this.tokens.consume();
             ESelect eselect;
             parseSelect(&parseResult, &eselect);
-            Expr e = {eselect};
+            TExpr e = {eselect};
             parseResult.typ = Type.SELECT;
             parseResult.expr = e;
             return parseResult;
@@ -290,10 +274,10 @@ class Parser
         }
     }
 
-    EWhere parseWhere(ParseResult* pr)
+    Expr parseWhere(ParseResult* pr)
     {
         // parse a simple where
-        EWhere[] terms = [parseWhere_1(pr)];
+        Expr[] terms = [parseWhere_1(pr)];
 
         while (this.peekNIsType(0, TokenType.OPOR))
         {
@@ -308,19 +292,18 @@ class Parser
         }
         else
         {
-            EWhere e = new EWhereComplex(BoolOp.or, terms);
-            return e;
+            return boolExpr(BoolOp.or, terms);
         }
     }
 
-    EWhere parseWhere_1(ParseResult* pr)
+    Expr parseWhere_1(ParseResult* pr)
     {
-        EWhere first = parseWhere_2(pr);
-        EWhere[] exprs = [first];
+        Expr first = parseWhere_2(pr);
+        Expr[] exprs = [first];
         while (peekNIsType(0, TokenType.OPAND))
         {
             this.tokens.consume();
-            EWhere next = parseWhere_2(pr);
+            Expr next = parseWhere_2(pr);
             exprs ~= next;
         }
 
@@ -330,18 +313,16 @@ class Parser
         }
         else
         {
-            EWhere combined;
-            combined = new EWhereComplex(BoolOp.and, exprs);
-            return combined;
+            return boolExpr(BoolOp.and, exprs);
         }
     }
 
-    EWhere parseWhere_2(ParseResult* pr)
+    Expr parseWhere_2(ParseResult* pr)
     {
         if (peekNIsType(0, TokenType.LPAREN))
         {
             auto lparen = this.tokens.consume();
-            EWhere w = parseWhere(pr);
+            Expr w = parseWhere(pr);
             if (this.tokens.isEOF())
             {
                 pr.errors ~= TokenAndError(lparen, "unterminated parenthesis");
@@ -365,10 +346,8 @@ class Parser
         }
     }
 
-    EWhere parseWhere_3(ParseResult* pr)
+    Expr parseWhere_3(ParseResult* pr)
     {
-        EWhereSimple* where = new EWhereSimple();
-
         // TODO: only parsing one level, support arbitrary boolean expressions
         if (peekNIsType(0, TokenType.STRING))
         {
@@ -379,10 +358,20 @@ class Parser
                 auto op = this.tokens.consume();
                 if (peekNIsOnOf(0, TokenType.NUMERIC, TokenType.STRING))
                 {
-                    auto lhs = this.tokens.consume();
-                    where.operator = parseOp(op);
-                    where.field = sym.stripQuotes();
-                    where.test = lhs;
+                    auto lhs = stringExpr(sym.stripQuotes());
+                    Expr rhs;
+                    if (peekNIsType(0, TokenType.NUMERIC))
+                    {
+                        auto val = this.tokens.consume();
+                        rhs = numExpr(val.text);
+                    }
+                    else
+                    {
+                        auto val = this.tokens.consume();
+                        rhs = stringExpr(val.stripQuotes());
+                    }
+
+                    return binaryExpr(lhs, parseOp(op), rhs);
                 }
                 else if (this.tokens.isEOF())
                 {
@@ -404,9 +393,7 @@ class Parser
                         "expected boolean operator after symbol in WHERE");
             }
         }
-
-        EWhere e = where;
-        return e;
+        return Expr();
     }
 
     void parseOrderBy(ParseResult* pr, out string[] fields, out Order[] directions)
@@ -610,10 +597,6 @@ unittest
     auto p = parserFromString("select from 'foo' where 'p' = 3");
     auto e = p.parse();
     assert(e.errors.length == 0);
-    assert(e.expr.select.where.get!(EWhereSimple*).field == "p");
-    assert(e.expr.select.where.get!(EWhereSimple*).operator == ComparisonOp.Equal);
-    assert(e.expr.select.where.get!(EWhereSimple*).test.text == "3");
-    assert(e.expr.select.where.get!(EWhereSimple*).test.typ == TokenType.NUMERIC);
 }
 
 unittest
