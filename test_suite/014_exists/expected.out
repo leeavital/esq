@@ -1,0 +1,1 @@
+curl -XPOST http://localhost:9200/people/_search?pretty=true -H "Content-Type: application/json" -d '{ "query" : { "bool" : { "should" : [ { "exists" : { "field" : "age" } } , { "exists" : { "field" : "birth_date" } } , { "exists" : { "field" : "dob" } } ] } } }'
