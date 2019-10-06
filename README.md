@@ -67,6 +67,12 @@ Example Use
   esq 'SELECT * FROM * LIMIT 10 ON HOST remote.elasticsearch.host:4040'
   ```
 
+1. select documents which have a field named "dateOfBirth"
+
+  ```
+  esq 'SELECT * FROM * WHERE EXISTS(dateOfBirth)'
+  ```
+
 Build and Install
 ==================
 

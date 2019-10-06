@@ -1,0 +1,18 @@
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                    ^^^
+expected comma or rparen, inserting comma between function arguments
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                                    ^
+expected string on number as function argument
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                                       ^^
+expected from, where, on, or field names in select statement
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                                         ^
+expected from, where, on, or field names in select statement
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                                          ^
+expected from, where, on, or field names in select statement
+SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
+                                           ^
+expected from, where, on, or field names in select statement

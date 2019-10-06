@@ -204,7 +204,19 @@ private void writeWhere(JsonWriter* buf, Expr expr)
 
         return;
     case ExprType.Function:
-        buf.field("not implemented", 0);
+        import std.string;
+
+        auto func = expr.func;
+        if (func.fname.toLower() == "exists")
+        {
+            buf.startObject("exists");
+            buf.field("field", func.args[0].str.value);
+            buf.endObject();
+        }
+        else
+        {
+            buf.field("not implemented", 0);
+        }
         return;
     case ExprType.Number:
         assert(0);
