@@ -1,6 +1,6 @@
 SELECT FROM bar LIMIT app WHERE x = "foo
-                                       ^
-unterminated string; assuming closing quote
+                                       [31m^[0m
+[31munterminated string; assuming closing quote[0m
 SELECT FROM bar LIMIT app WHERE x = "foo
-                      ^^^
-expected numeric after LIMIT
+                      [31m^[0m[31m^[0m[31m^[0m
+[31mexpected numeric after LIMIT[0m

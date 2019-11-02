@@ -1,18 +1,18 @@
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                    ^^^
-expected comma or rparen, inserting comma between function arguments
+                    [31m^[0m[31m^[0m[31m^[0m
+[31mexpected comma or rparen, inserting comma between function arguments[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                                    ^
-expected string on number as function argument
+                                    [31m^[0m
+[31mexpected string on number as function argument[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                                       ^^
-expected from, where, on, or field names in select statement
+                                       [31m^[0m[31m^[0m
+[31mexpected from, where, on, or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                                         ^
-expected from, where, on, or field names in select statement
+                                         [31m^[0m
+[31mexpected from, where, on, or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                                          ^
-expected from, where, on, or field names in select statement
+                                          [31m^[0m
+[31mexpected from, where, on, or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
-                                           ^
-expected from, where, on, or field names in select statement
+                                           [31m^[0m
+[31mexpected from, where, on, or field names in select statement[0m

@@ -1,3 +1,3 @@
 SELECT FROM "foo" WHERE "e" =
-                            ^
-unterminated boolean expression
+                            [31m^[0m
+[31munterminated boolean expression[0m

@@ -2,6 +2,7 @@ import parser;
 import lexer;
 import std.stdio;
 import lexer;
+import colorize : color, fg;
 
 // we could get really fancy here and deal with multi-line sources, but
 // those are pretty unlikely to show up, so I'll just assume that all
@@ -21,10 +22,10 @@ void formatError(T)(File f, const string source, const T terr)
     }
     for (ulong i = R.startPos(terr); i < R.endPos(terr); i++)
     {
-        f.write("^");
+        f.write("^".color(fg.red));
     }
     f.write("\n");
-    f.write(R.text(terr));
+    f.write(R.text(terr).color(fg.red));
     f.write("\n");
 }
 
