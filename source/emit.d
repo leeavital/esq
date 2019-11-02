@@ -213,6 +213,14 @@ private void writeWhere(JsonWriter* buf, Expr expr)
             buf.field("field", func.args[0].str.value);
             buf.endObject();
         }
+        else if (func.fname.toLower() == "match")
+        {
+            buf.startObject("match");
+            buf.startObject(func.args[0].str.value);
+            buf.field("query", func.args[1].str.value);
+            buf.endObject();
+            buf.endObject();
+        }
         else
         {
             buf.field("not implemented", 0);
