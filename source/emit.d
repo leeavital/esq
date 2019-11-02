@@ -186,8 +186,32 @@ private void writeWhere(JsonWriter* buf, Expr expr)
             auto negated = binaryExpr(*lhs, ComparisonOp.Equal, *rhs);
             writeWhere(buf, boolExpr(BoolOp.not, [negated]));
             return;
-        }
+        case ComparisonOp.In:
+            buf.startObject("terms");
+            buf.startArray(fieldName);
+            import std.stdio;
 
+            assert(rhs.t == ExprType.List);
+            foreach (const re; rhs.list.exprs)
+            {
+                final switch (re.t)
+                {
+                case ExprType.String:
+                    buf.value(re.str.value);
+                    break;
+                case ExprType.Number:
+                    buf.literalValue(re.num.value);
+                    break;
+                case ExprType.Binary, ExprType.Boolean, ExprType.Function,
+                        ExprType.List:
+                        assert(0);
+                }
+
+            }
+            buf.endArray();
+            buf.endObject();
+            return;
+        }
     case ExprType.Boolean:
         auto boolExp = expr.boolE;
         buf.startObject("bool");
@@ -230,6 +254,8 @@ private void writeWhere(JsonWriter* buf, Expr expr)
         assert(0);
     case ExprType.String:
         assert(0);
+    case ExprType.List:
+        assert(0);
     }
 }
 
@@ -243,7 +269,7 @@ private void writeWhere(JsonWriter* buf, Expr expr)
     case ExprType.Number:
         buf.literalField(fieldName, expr.num.value);
         break;
-    case ExprType.Binary, ExprType.Boolean, ExprType.Function:
+    case ExprType.Binary, ExprType.Boolean, ExprType.Function, ExprType.List:
         assert(0);
     }
 }
