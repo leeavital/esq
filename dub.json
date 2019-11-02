@@ -1,9 +1,12 @@
 {
-	"name": "esq",
-	"authors": [
-		"Lee Avital"
-	],
-	"description": "A swiss-army knife for elasticsearch",
-	"copyright": "Copyright © 2019, Lee Avital",
-	"license": "LGPL"
+  "name": "esq",
+  "authors": [
+    "Lee Avital"
+  ],
+  "description": "A swiss-army knife for elasticsearch",
+  "copyright": "Copyright © 2019, Lee Avital",
+  "dependencies": {
+    "colorize": "~>1.0.5"
+  },
+  "license": "LGPL"
 }
