@@ -249,7 +249,7 @@ private void writeWhere(JsonWriter* buf, Expr expr)
 }
 
 immutable string[ComparisonOp] comparisonToName;
-static this()
+shared static this()
 {
     comparisonToName[ComparisonOp.Gte] = "gte";
     comparisonToName[ComparisonOp.Lte] = "lte";

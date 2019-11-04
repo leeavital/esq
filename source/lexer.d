@@ -87,7 +87,7 @@ struct AutoFix
 }
 
 immutable TokenType[string] literalTokens;
-static this()
+shared static this()
 {
     literalTokens["("] = TokenType.LPAREN;
     literalTokens[")"] = TokenType.RPAREN;
