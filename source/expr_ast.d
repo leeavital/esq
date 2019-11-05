@@ -76,8 +76,7 @@ Expr binaryExpr(Expr l, ComparisonOp op, Expr r)
 
 Expr listExpr(Expr[] es)
 {
-    Expr e = {t:
-    ExprType.List, list : ListExpr(es)};
+    Expr e = {t: ExprType.List, list: ListExpr(es)};
     return e;
 }
 
