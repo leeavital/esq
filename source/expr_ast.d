@@ -13,6 +13,7 @@ enum ComparisonOp
     Lte,
     Gt,
     Gte,
+    In,
 }
 
 struct BinaryExpr
@@ -44,13 +45,19 @@ struct BoolExpr
     Expr[] operands;
 }
 
+struct ListExpr
+{
+    Expr[] exprs;
+}
+
 enum ExprType
 {
     Binary,
     Boolean,
     Function,
     String,
-    Number
+    Number,
+    List
 }
 
 Expr binaryExpr(Expr l, ComparisonOp op, Expr r)
@@ -64,6 +71,12 @@ Expr binaryExpr(Expr l, ComparisonOp op, Expr r)
 
     Expr e = {ExprType.Binary};
     e.binary = BinaryExpr(lH, op, rH);
+    return e;
+}
+
+Expr listExpr(Expr[] es)
+{
+    Expr e = {t: ExprType.List, list: ListExpr(es)};
     return e;
 }
 
@@ -106,6 +119,7 @@ struct Expr
         FuncCallExpr func;
         StringExpr str;
         NumExpr num;
+        ListExpr list;
     }
 
     @nogc bool isA(ExprType t1)
@@ -163,6 +177,11 @@ struct Expr
 
             auto b = this.binary;
             return b.left.toString() ~ b.operator.to!string ~ b.right.toString();
+        case ExprType.List:
+            import std.algorithm.iteration : joiner, map;
+            import std.conv : to;
+
+            return "[" ~ this.list.exprs.map!(e => e.toString()).joiner(", ").to!string ~ "]";
         case ExprType.String:
             return "str[" ~ this.str.value ~ "]";
         case ExprType.Number:
@@ -178,9 +197,11 @@ unittest
     Expr e3 = binaryExpr(e, ComparisonOp.Equal, e2);
     Expr e4 = fcallExpr("foo", [e, e2, e3]);
     Expr e5 = boolExpr(BoolOp.or, [e, e2, e3]);
+    Expr e6 = listExpr([e, e2]);
     assert(e.isA(ExprType.String));
     assert(e2.isA(ExprType.Number));
     assert(e3.isA(ExprType.Binary));
     assert(e4.isA(ExprType.Function));
     assert(e5.isA(ExprType.Boolean));
+    assert(e6.isA(ExprType.List));
 }

@@ -20,9 +20,10 @@ enum TokenType
     OPEQ,
     OPGT,
     OPGTE,
-    OPNEQ,
+    OPIN,
     OPLT,
     OPLTE,
+    OPNEQ,
     OPOR,
     ORDER,
     RPAREN,
@@ -89,9 +90,9 @@ struct AutoFix
 immutable TokenType[string] literalTokens;
 shared static this()
 {
+    literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["("] = TokenType.LPAREN;
     literalTokens[")"] = TokenType.RPAREN;
-    literalTokens["!="] = TokenType.OPNEQ;
     literalTokens["*"] = TokenType.STAR;
     literalTokens[","] = TokenType.COMMA;
     literalTokens["<"] = TokenType.OPLT;
@@ -99,6 +100,7 @@ shared static this()
     literalTokens["="] = TokenType.OPEQ;
     literalTokens[">"] = TokenType.OPGT;
     literalTokens[">="] = TokenType.OPGTE;
+    literalTokens["IN"] = TokenType.OPIN;
     literalTokens["alter"] = TokenType.ALTER;
     literalTokens["and"] = TokenType.OPAND;
     literalTokens["asc"] = TokenType.ASC;
@@ -107,6 +109,7 @@ shared static this()
     literalTokens["desc"] = TokenType.DESC;
     literalTokens["distinct"] = TokenType.DISTINCT;
     literalTokens["from"] = TokenType.FROM;
+    literalTokens["host"] = TokenType.HOST;
     literalTokens["index"] = TokenType.INDEX;
     literalTokens["limit"] = TokenType.LIMIT;
     literalTokens["on"] = TokenType.ON;
@@ -114,7 +117,6 @@ shared static this()
     literalTokens["order"] = TokenType.ORDER;
     literalTokens["select"] = TokenType.SELECT;
     literalTokens["where"] = TokenType.WHERE;
-    literalTokens["host"] = TokenType.HOST;
 }
 
 class TokenStream

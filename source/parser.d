@@ -386,6 +386,17 @@ class Parser
                             "expected string or number after operator");
                 }
             }
+            else if (peekNIsType(0, TokenType.OPIN))
+            {
+                auto tokIn = this.tokens.consume(); // consume OPIN
+                if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(tokIn, "unexpected EOF after IN");
+                }
+                auto list = parseList(pr);
+                auto str = stringExpr(sym.stripQuotes());
+                return binaryExpr(str, ComparisonOp.In, list);
+            }
             else if (this.tokens.isEOF())
             {
                 pr.errors ~= TokenAndError(sym, "unterminated boolean statement");
@@ -460,6 +471,60 @@ class Parser
         }
 
         return fcallExpr(fname.text, args);
+    }
+
+    Expr parseList(ParseResult* pr)
+    {
+        if (!peekNIsType(0, TokenType.LPAREN))
+        {
+            pr.errors ~= TokenAndError(this.tokens.consume(), "expected left parenthesis after IN");
+            return Expr();
+        }
+        else
+        {
+            auto last = this.tokens.consume(); // consume lparen
+            Expr[] exprs;
+            while (true)
+            {
+                if (peekNIsType(0, TokenType.STRING))
+                {
+                    last = this.tokens.consume();
+                    exprs ~= stringExpr(last.stripQuotes());
+                }
+                else if (peekNIsType(0, TokenType.NUMERIC))
+                {
+                    last = this.tokens.consume();
+                    exprs ~= numExpr(last.text);
+                }
+                else if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(last, "expected NUMBER or STRING");
+                    break;
+                }
+                else
+                {
+                    pr.errors ~= TokenAndError(this.tokens.consume(),
+                            "expected NUMBER or STRING in list");
+                }
+
+                if (peekNIsType(0, TokenType.RPAREN))
+                {
+                    this.tokens.consume(); // consume Rparen
+                    break;
+                }
+                else if (peekNIsType(0, TokenType.COMMA))
+                {
+                    // consume comma
+                    last = this.tokens.consume();
+                }
+                else if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(last, "unexpected EOF in list of expressions");
+                    break;
+                }
+            }
+            return listExpr(exprs);
+        }
     }
 
     void parseOrderBy(ParseResult* pr, out string[] fields, out Order[] directions)

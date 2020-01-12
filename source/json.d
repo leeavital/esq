@@ -85,6 +85,12 @@ import std.container;
         return appendWithQuotes(v);
     }
 
+    @nogc JsonWriter literalValue(string v)
+    {
+        writeCommaIfNeeded();
+        return append(v);
+    }
+
     @nogc JsonWriter endObject()
     {
         hasField[fieldI--] = false;
