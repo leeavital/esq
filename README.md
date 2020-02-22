@@ -24,7 +24,7 @@ The following is an inexhaustive list of what you might do with `esq` (\* denote
 - Check that documents do or do not exist for a certain query
 - Delete documents that match a certain search (\*)
 - Alter index settings
-- See how many documents fall into buckets (e.g. count `users` by `country` field) (\*)
+- See how many documents fall into buckets (e.g. count `users` by `country` field)
 
 Example Use
 ===========
@@ -50,35 +50,42 @@ Example Use
 
 1. bucket users by favorite color
 
-   ```
-   esq 'SELECT DISTINCT favoriteColor FROM people'
-   ```
+    ```
+    esq 'SELECT DISTINCT favoriteColor FROM people'
+    ```
 
 
 1. count the number of unique favorite colors in the people index
 
-  ```
-  esq 'SELECT COUNT DISTINCT favoriteColor FROM people'
-  ```
+   ```
+   esq 'SELECT COUNT DISTINCT favoriteColor FROM people'
+   ```
 
 1. select any 10 documents using a URL different than localhost:9200
 
-  ```
-  esq 'SELECT * FROM * LIMIT 10 ON HOST remote.elasticsearch.host:4040'
-  ```
+   ```
+   esq 'SELECT * FROM * LIMIT 10 ON HOST remote.elasticsearch.host:4040'
+   ```
 
 1. select documents which have a field named "dateOfBirth"
 
-  ```
-  esq 'SELECT * FROM * WHERE EXISTS(dateOfBirth)'
-  ```
+   ```
+   esq 'SELECT * FROM * WHERE EXISTS(dateOfBirth)'
+   ```
+
+1. select documents where the birthyear is one of 1940 or 1942.
+
+   ```
+   esq 'SELECT *  FROM * where birthyear IN (1940, 1942)'
+   ```
+
 
 Build and Install
 ==================
 
 Requirements:
 
-- A working D build environment (download from https://dlang.org/ or your systems package manager)
+- A working D build environment (download from https://dlang.org/ or your system's package manager)
 - `make`
 
 Run `make esq` to build a binary
