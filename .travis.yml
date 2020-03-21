@@ -4,7 +4,7 @@ d:
   - dmd
 
 script:
-  - dub fetch --version='~master' dfmt
+  - dub fetch --version='0.11.0' dfmt
   - make -j4 test check_format
 
 os:
