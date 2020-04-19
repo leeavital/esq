@@ -348,6 +348,16 @@ class Parser
 
     Expr parseWhere_3(ParseResult* pr)
     {
+        if (peekNIsType(0, TokenType.NOT))
+        {
+            auto tokNot = this.tokens.consume();
+            if (this.tokens.isEOF())
+            {
+                pr.errors ~= TokenAndError(tokNot, "unexpected EOF after NOT");
+            }
+            Expr e = parseWhere(pr);
+            return boolExpr(BoolOp.not, [e]);
+        }
         if (peekNIsType(0, TokenType.STRING) && peekNIsType(1, TokenType.LPAREN))
         {
             return parseFunction(pr);
@@ -396,6 +406,19 @@ class Parser
                 auto list = parseList(pr);
                 auto str = stringExpr(sym.stripQuotes());
                 return binaryExpr(str, ComparisonOp.In, list);
+            }
+            else if (peekNIsType(0, TokenType.NOT) && peekNIsType(1, TokenType.OPIN))
+            {
+                this.tokens.consume(); // consume NOT
+                auto tokIn = this.tokens.consume(); // consume OPIN
+                if (this.tokens.isEOF())
+                {
+                    pr.errors ~= TokenAndError(tokIn, "unexpected EOF after IN");
+                }
+                auto list = parseList(pr);
+                auto str = stringExpr(sym.stripQuotes());
+                auto inExpr = binaryExpr(str, ComparisonOp.In, list);
+                return boolExpr(BoolOp.not, [inExpr]);
             }
             else if (this.tokens.isEOF())
             {

@@ -14,6 +14,7 @@ enum TokenType
     INDEX,
     LIMIT,
     LPAREN,
+    NOT,
     NUMERIC,
     ON,
     OPAND,
@@ -112,6 +113,7 @@ shared static this()
     literalTokens["host"] = TokenType.HOST;
     literalTokens["index"] = TokenType.INDEX;
     literalTokens["limit"] = TokenType.LIMIT;
+    literalTokens["not"] = TokenType.NOT;
     literalTokens["on"] = TokenType.ON;
     literalTokens["or"] = TokenType.OPOR;
     literalTokens["order"] = TokenType.ORDER;
