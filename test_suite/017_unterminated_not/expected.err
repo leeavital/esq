@@ -1,0 +1,3 @@
+SELECT * FROM x WHERE NOT 
+                      [31m^[0m[31m^[0m[31m^[0m
+[31munexpected EOF after NOT[0m
