@@ -156,14 +156,6 @@ class Parser
                             "Expected an index name after FROM");
                 }
             }
-	    else if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1, TokenType.LPAREN) && peekNIsType(2, TokenType.STAR) && peekNIsType(3, TokenType.RPAREN))
-	    {
-	      writefln("count *");
-	      this.tokens.consume();
-	      this.tokens.consume();
-	      this.tokens.consume();
-	      this.tokens.consume();
-	    }
             else if (peekNIsType(0, TokenType.WHERE))
             {
                 auto t = this.tokens.consume();
@@ -246,6 +238,15 @@ class Parser
             e.fieldNames = [];
             return;
         }
+
+	if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1, TokenType.LPAREN) && peekNIsType(2, TokenType.STAR) && peekNIsType(3, TokenType.RPAREN))
+	{
+	    this.tokens.consume();
+	    this.tokens.consume();
+	    this.tokens.consume();
+	    this.tokens.consume();
+	    e.aggregation = Aggregation.Count;
+	}
 
         if (peekNIsType(0, TokenType.COUNT) || peekNIsType(1, TokenType.DISTINCT))
         {
