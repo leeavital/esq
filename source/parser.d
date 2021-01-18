@@ -158,6 +158,7 @@ class Parser
             }
 	    else if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1, TokenType.LPAREN) && peekNIsType(2, TokenType.STAR) && peekNIsType(3, TokenType.RPAREN))
 	    {
+	      writefln("count *");
 	      this.tokens.consume();
 	      this.tokens.consume();
 	      this.tokens.consume();
@@ -232,7 +233,7 @@ class Parser
             {
                 auto badToken = this.tokens.consume();
                 pr.errors ~= TokenAndError(badToken,
-                        "expected from, where, on, or field names in select statement");
+                        "expected from, where, on, count(*), or field names in select statement");
             }
         }
     }
@@ -751,7 +752,7 @@ unittest
     auto e = p.parse();
     assert(e.errors.length == 1);
     assert(e.errors[0] == TokenAndError(Token(TokenType.SELECT, 7, "select"),
-            "expected from, where, on, or field names in select statement"));
+            "expected from, where, on, count(*), or field names in select statement"));
 }
 
 unittest
