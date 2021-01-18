@@ -239,14 +239,16 @@ class Parser
             return;
         }
 
-	if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1, TokenType.LPAREN) && peekNIsType(2, TokenType.STAR) && peekNIsType(3, TokenType.RPAREN))
-	{
-	    this.tokens.consume();
-	    this.tokens.consume();
-	    this.tokens.consume();
-	    this.tokens.consume();
-	    e.aggregation = Aggregation.Count;
-	}
+        if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1,
+                TokenType.LPAREN) && peekNIsType(2, TokenType.STAR)
+                && peekNIsType(3, TokenType.RPAREN))
+        {
+            this.tokens.consume();
+            this.tokens.consume();
+            this.tokens.consume();
+            this.tokens.consume();
+            e.aggregation = Aggregation.Count;
+        }
 
         if (peekNIsType(0, TokenType.COUNT) || peekNIsType(1, TokenType.DISTINCT))
         {

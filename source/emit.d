@@ -23,11 +23,9 @@ string emitResult(Target t, ParseResult input)
     case Type.SELECT:
         auto hasBody = shouldWriteQueryBody(input.expr.select);
 
-        buf.write(format("curl%s %s/%s/%s?pretty=true",
-		hasBody ? " -XPOST" : "",
-		getHost(input),
-		input.expr.select.from,
-			input.expr.select.aggregation == Aggregation.Count ? "_count" : "_search"));
+        buf.write(format("curl%s %s/%s/%s?pretty=true", hasBody ? " -XPOST" : "",
+                getHost(input), input.expr.select.from,
+                input.expr.select.aggregation == Aggregation.Count ? "_count" : "_search"));
 
         if (hasBody)
         {
@@ -318,7 +316,8 @@ shared static this()
 @nogc private bool shouldWriteQueryBody(ESelect e)
 {
     return e.lowerLimit > 0 || e.where != Expr() || e.orderFields.length > 0
-      || e.fieldNames.length > 0 || !(e.aggregation == Aggregation.None || e.aggregation == Aggregation.Count);
+        || e.fieldNames.length > 0 || !(e.aggregation == Aggregation.None
+                || e.aggregation == Aggregation.Count);
 }
 
 @nogc private string orderToJSON(Order order)
