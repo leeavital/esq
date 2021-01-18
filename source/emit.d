@@ -121,6 +121,8 @@ private void writeQuery(JsonWriter* jwriter, ESelect select)
     {
     case Aggregation.None:
         assert(0);
+    case Aggregation.Count:
+        assert(0);
     case Aggregation.Distinct:
         aggName = "terms";
         break;

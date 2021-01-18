@@ -521,5 +521,6 @@ unittest
     check(`WHERE x != foo`, [`WHERE`, `x`, `!=`, `foo`]);
     check(`DISTINCT`, ["DISTINCT"]);
     check(`"foo`, [`"foo`]);
+    check(`SELECT COUNT(*) FROM x`, ["SELECT", "COUNT", "(", "*", ")", "FROM", `x`]);
     finish();
 }

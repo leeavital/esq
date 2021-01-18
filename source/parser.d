@@ -43,7 +43,8 @@ enum Aggregation
 {
     None = 0,
     Distinct = 1,
-    CountDistinct = 2
+    CountDistinct = 2,
+    Count = 3
 }
 
 enum Order
@@ -155,6 +156,13 @@ class Parser
                             "Expected an index name after FROM");
                 }
             }
+	    else if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1, TokenType.LPAREN) && peekNIsType(2, TokenType.STAR) && peekNIsType(3, TokenType.RPAREN))
+	    {
+	      this.tokens.consume();
+	      this.tokens.consume();
+	      this.tokens.consume();
+	      this.tokens.consume();
+	    }
             else if (peekNIsType(0, TokenType.WHERE))
             {
                 auto t = this.tokens.consume();
