@@ -1,0 +1,1 @@
+curl -XPOST http://localhost:9200/foo/_count?pretty=true -H "Content-Type: application/json" -d '{ "query" : { "terms" : { "x" : [ 1 , 2 , 3 ] } } }'
