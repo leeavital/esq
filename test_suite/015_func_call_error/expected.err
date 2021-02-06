@@ -6,13 +6,13 @@ SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
 [31mexpected string on number as function argument[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
                                        [31m^[0m[31m^[0m
-[31mexpected from, where, on, or field names in select statement[0m
+[31mexpected from, where, on, count(*), or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
                                          [31m^[0m
-[31mexpected from, where, on, or field names in select statement[0m
+[31mexpected from, where, on, count(*), or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
                                           [31m^[0m
-[31mexpected from, where, on, or field names in select statement[0m
+[31mexpected from, where, on, count(*), or field names in select statement[0m
 SELECT WHERE fn(foo bar) AND fn(foo,,) fn(x)
                                            [31m^[0m
-[31mexpected from, where, on, or field names in select statement[0m
+[31mexpected from, where, on, count(*), or field names in select statement[0m

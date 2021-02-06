@@ -43,7 +43,8 @@ enum Aggregation
 {
     None = 0,
     Distinct = 1,
-    CountDistinct = 2
+    CountDistinct = 2,
+    Count = 3
 }
 
 enum Order
@@ -224,7 +225,7 @@ class Parser
             {
                 auto badToken = this.tokens.consume();
                 pr.errors ~= TokenAndError(badToken,
-                        "expected from, where, on, or field names in select statement");
+                        "expected from, where, on, count(*), or field names in select statement");
             }
         }
     }
@@ -236,6 +237,17 @@ class Parser
             this.tokens.consume();
             e.fieldNames = [];
             return;
+        }
+
+        if (peekNIsType(0, TokenType.COUNT) && peekNIsType(1,
+                TokenType.LPAREN) && peekNIsType(2, TokenType.STAR)
+                && peekNIsType(3, TokenType.RPAREN))
+        {
+            this.tokens.consume();
+            this.tokens.consume();
+            this.tokens.consume();
+            this.tokens.consume();
+            e.aggregation = Aggregation.Count;
         }
 
         if (peekNIsType(0, TokenType.COUNT) || peekNIsType(1, TokenType.DISTINCT))
@@ -743,7 +755,7 @@ unittest
     auto e = p.parse();
     assert(e.errors.length == 1);
     assert(e.errors[0] == TokenAndError(Token(TokenType.SELECT, 7, "select"),
-            "expected from, where, on, or field names in select statement"));
+            "expected from, where, on, count(*), or field names in select statement"));
 }
 
 unittest
