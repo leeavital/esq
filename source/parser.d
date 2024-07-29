@@ -173,7 +173,13 @@ class Parser
             }
             else if (peekNIsType(0, TokenType.LIMIT))
             {
-                this.tokens.consume(); // consume limit
+                auto limitTok = this.tokens.consume(); // consume limit
+                if (e.aggregation == Aggregation.Count) 
+                {
+                    pr.errors ~= TokenAndError(limitTok, "cannot use COUNT(*) and LIMIT");
+                }
+
+
                 auto t = this.tokens.consume();
                 if (t.typ != TokenType.NUMERIC)
                 {
@@ -243,11 +249,16 @@ class Parser
                 TokenType.LPAREN) && peekNIsType(2, TokenType.STAR)
                 && peekNIsType(3, TokenType.RPAREN))
         {
-            this.tokens.consume();
+            auto countTok = this.tokens.consume();
             this.tokens.consume();
             this.tokens.consume();
             this.tokens.consume();
             e.aggregation = Aggregation.Count;
+
+            if (e.lowerLimit > 0 )
+            {
+              pr.errors ~= TokenAndError(countTok, "cannot use COUNT(*) and LIMIT at the same time");
+            }
         }
 
         if (peekNIsType(0, TokenType.COUNT) || peekNIsType(1, TokenType.DISTINCT))

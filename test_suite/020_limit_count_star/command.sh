@@ -1,0 +1,1 @@
+esq 'SELECT COUNT(*) FROM foo LIMIT 2'
