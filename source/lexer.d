@@ -345,7 +345,7 @@ class TokenStream
         bool isValidSymChar(ulong n)
         {
             auto c = this.source[n];
-            return isAlphaNum(c) || c == '_' || c == '.';
+            return isAlphaNum(c) || c == '_' || c == '.' || c == ':';
         }
 
         auto n = this.peekPos;
@@ -385,6 +385,7 @@ class TokenStream
         }
 
         // find the next space
+        auto foundDecimal = false;
         while (true)
         {
             if (n >= this.source.length)
@@ -401,6 +402,13 @@ class TokenStream
             {
                 break;
             }
+
+            if (foundDecimal && c == '.')
+            {
+                return false;
+            }
+
+            foundDecimal = foundDecimal || c == '.';
         }
 
         // TODO: make sure 1 or zero decimal points
@@ -524,5 +532,6 @@ unittest
     check(`SELECT COUNT(*) FROM x`, [
         "SELECT", "COUNT", "(", "*", ")", "FROM", `x`
     ]);
+    check("10.0.0.1:4000", [`10.0.0.1:4000`]);
     finish();
 }
