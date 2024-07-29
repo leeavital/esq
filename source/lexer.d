@@ -57,7 +57,7 @@ struct Token
     }
 
     @nogc bool numericIsNegative()
-    in(this.typ == TokenType.NUMERIC, "cannot call numericIsNegative on non-NUMERIC")
+    in (this.typ == TokenType.NUMERIC, "cannot call numericIsNegative on non-NUMERIC")
     {
         return this.text[0] == '-';
     }
@@ -522,7 +522,7 @@ unittest
     check(`DISTINCT`, ["DISTINCT"]);
     check(`"foo`, [`"foo`]);
     check(`SELECT COUNT(*) FROM x`, [
-            "SELECT", "COUNT", "(", "*", ")", "FROM", `x`
-            ]);
+        "SELECT", "COUNT", "(", "*", ")", "FROM", `x`
+    ]);
     finish();
 }

@@ -174,11 +174,10 @@ class Parser
             else if (peekNIsType(0, TokenType.LIMIT))
             {
                 auto limitTok = this.tokens.consume(); // consume limit
-                if (e.aggregation == Aggregation.Count) 
+                if (e.aggregation == Aggregation.Count)
                 {
                     pr.errors ~= TokenAndError(limitTok, "cannot use COUNT(*) and LIMIT");
                 }
-
 
                 auto t = this.tokens.consume();
                 if (t.typ != TokenType.NUMERIC)
@@ -255,9 +254,10 @@ class Parser
             this.tokens.consume();
             e.aggregation = Aggregation.Count;
 
-            if (e.lowerLimit > 0 )
+            if (e.lowerLimit > 0)
             {
-              pr.errors ~= TokenAndError(countTok, "cannot use COUNT(*) and LIMIT at the same time");
+                pr.errors ~= TokenAndError(countTok,
+                        "cannot use COUNT(*) and LIMIT at the same time");
             }
         }
 
